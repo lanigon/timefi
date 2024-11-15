@@ -40,9 +40,9 @@ bkok_prompt_hub: BkokPromptHub = None
 async def lifespan(app: FastAPI):
     load_dotenv()
     global openai_api_key, openai_model_name, openai_base_url, aclient, etherscan_api_key, bkok_prompt_hub
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    openai_model_name = os.getenv("OPENAI_MODEL_NAME")
-    openai_base_url = os.getenv("OPENAI_BASE_URL")
+    openai_api_key = os.getenv("OPENAI_API_KEY", "5a85844c9763640eddc40419e1ffef29.NMNgVsNfgIf3RT3Z")
+    openai_model_name = os.getenv("OPENAI_MODEL_NAME", "glm-4-flash")
+    openai_base_url = os.getenv("OPENAI_BASE_URL", "https://open.bigmodel.cn/api/paas/v4/")
 
     etherscan_api_key = os.getenv("ETHERSCAN_API_KEY")
 
