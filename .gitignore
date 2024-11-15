@@ -1,0 +1,4 @@
+src_py/.env
+bkok_venv/*
+
+**/__pycache__
