@@ -27,9 +27,9 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import{payfiaddress, abi, merchant} from "@/contracts/payfi";
-import { useWriteContract } from "wagmi";
+import { useReadContract, useWriteContract } from "wagmi";
+import axios from "axios";
 
-// 表单验证模式
 const formSchema = z.object({
   walletAddress: z.string().nonempty("钱包地址不能为空"),
   amount: z
@@ -48,13 +48,15 @@ type FormData = z.infer<typeof formSchema>;
 export default function PaymentForm() {
   const [activeTab, setActiveTab] = useState<"payfi" | "transfer">("payfi");
   const {writeContract, writeContractAsync} = useWriteContract()
+  const [message, setMessage] = useState("");
+  const [loading, setloading] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       walletAddress: "",
       amount: 0,
-      days: 0, // 仅在 PayFi 模式下使用
+      days: 0, 
       token: "USDC",
     },
   });
@@ -90,13 +92,22 @@ export default function PaymentForm() {
       alert("success")
     } catch (error) {
       console.error("submit error", error);
-      alert("submit error");
+      alert(error);
     }
   }
 
+  const handleClick = async() => {
+    const add = form.getValues("walletAddress");
+    setloading(true)  
+    const response = await axios.post("/ai/eval_wallet", {
+      wallet_address: add,
+      use_sepolia: true
+    })
+    setloading(false)
+    console.log(response.data)
+  }
   return (
     <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow">
-      {/* Tabs for PayFi and Transfer modes */}
       <Tabs defaultValue="payfi" onValueChange={(value) => setActiveTab(value as "payfi" | "transfer")}>
         <TabsList className="flex justify-center mb-4">
           <TabsTrigger value="payfi">PayFi</TabsTrigger>
@@ -105,19 +116,34 @@ export default function PaymentForm() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="">
-            {/* Wallet Address field */}
-            <FormField
-              control={form.control}
-              name="walletAddress"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Wallet Address</FormLabel>
-                  <FormControl>
-                    <Input placeholder="wallet address" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+          <FormField
+          control={form.control}
+          name="walletAddress"
+          render={({ field }) => (
+          <FormItem>
+            <FormLabel>Wallet Address</FormLabel>
+            <FormControl>
+              <div className="flex items-center">
+                <Input
+                  placeholder="wallet address"
+                  className="flex-grow"
+                  {...field}
+                />
+                <Button
+                  type="button"
+                  onClick={handleClick}
+                  className="ml-2"
+                >
+                  {loading?"loading...": "evaluate"}
+                </Button>
+              </div>
+            </FormControl>
+            {message && (
+              <div className="text-gray-700 mt-2">{message}</div>
+            )}
+          </FormItem>          
+        )}
+      />
 
             <TabsContent value="payfi">
               <FormField

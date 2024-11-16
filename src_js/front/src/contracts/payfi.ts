@@ -1,5 +1,4 @@
-export const payfiaddress = "0xd4d81C04938cd751723DE23e47BBA20C59bf1B94"
-
+export const payfiaddress = "0xAF7785F8dDFC9629949eDdb07Ba14d53Fc853C14";
 export const abi = [
   {
   "inputs": [
@@ -411,12 +410,12 @@ export const abi = [
   "type": "address"
   }
   ],
-  "name": "getLoanIds",
+  "name": "getLoansBetween",
   "outputs": [
   {
-  "internalType": "uint256",
+  "internalType": "string",
   "name": "",
-  "type": "uint256"
+  "type": "string"
   }
   ],
   "stateMutability": "view",
@@ -426,16 +425,11 @@ export const abi = [
   "inputs": [
   {
   "internalType": "address",
-  "name": "user",
-  "type": "address"
-  },
-  {
-  "internalType": "address",
   "name": "merchant",
   "type": "address"
   }
   ],
-  "name": "getLoansBetween",
+  "name": "getTransactions",
   "outputs": [
   {
   "internalType": "string",
@@ -840,6 +834,6 @@ export const abi = [
   "stateMutability": "nonpayable",
   "type": "function"
   }
-] as const
+  ]
 
 export const merchant = "0x2425A2d476840501f1863840fAAC5778E6Cb1e17";

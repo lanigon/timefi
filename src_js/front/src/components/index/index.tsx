@@ -1,15 +1,18 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAccount, useReadContracts } from "wagmi";
 import { abi, payfiaddress, merchant } from "@/contracts/payfi";
 import { useIsMerchant } from "../auth/merchant";
 
 export default function Index() {
+  const [amount, setAmount] = useState(0);
+  const [max, setMax] = useState(0);
+  const [cur, setCur] = useState(0);
   const {address} = useAccount()
   const isMerchant = useIsMerchant();
-  const result = useReadContracts({
+  const {data} = useReadContracts({
     contracts: [{
       address: payfiaddress,
       abi: abi,
@@ -36,16 +39,19 @@ export default function Index() {
       }
     ]
   })
-  // if(result)console.log(result)
-  // const amount = result.data![0].result
-  // const max = result.data![1].result
-  // const cur = result.data![2].result
+  useEffect(() => {
+    if (data) {
+      setAmount(Number(data[0].result))
+      setMax(Number(data[1].result))
+      setCur(Number(data[2].result))
+    }
+  }, [data]);
 
   return (
     <div className="flex flex-col items-center py-6 space-y-12">
       <div className="w-full max-w-md bg-blue-100 rounded-lg shadow-md p-6">
         <div className="flex flex-col items-center">
-          <span className="text-5xl font-extrabold text-gray-800">42</span>
+          <span className="text-5xl font-extrabold text-gray-800">{amount}</span>
           <span className="text-xl text-gray-600">USDC</span>
         </div>
       </div>
@@ -65,12 +71,24 @@ export default function Index() {
 
           <div className="p-6">
             <TabsContent value="user" className="flex flex-col space-y-4">
+              <div>info</div>
               <div className="text-gray-700">Total Give: 552</div>
               <div className="text-gray-700">Total Back: 55</div>
+              <div>statistics</div>
             </TabsContent>
             <TabsContent value="merchant" className="flex flex-col space-y-4">
-              <div className="text-gray-700 "><span className="font-bold">Total limit:</span> <span className="text-gray-500 text-3xl font-bold">23</span></div>
-              <div className="text-gray-700"><span>Current loan:</span><span className="text-gray-200">2</span></div>
+              <div>info</div>
+              <div className="text-gray-700 ">
+                <span className="font-bold">Total limit:</span> 
+                <span className="text-gray-500 text-3xl font-bold">
+                  {max !== undefined ? max.toString() : "Loading..."}</span>
+                </div>
+              <div className="text-gray-700">
+                <span>Current loan:</span><span className="text-gray-200">
+                  {cur !== undefined ? cur.toString() : "Loading..."}
+                </span>
+              </div>
+              <div>statistics</div>
               <div className="text-gray-700">num: 5</div>
             </TabsContent>
           </div>

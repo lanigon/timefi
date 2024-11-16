@@ -17,13 +17,12 @@ import { Input } from "@/components/ui/input";
 import { useAccount, useWriteContract } from "wagmi";
 import { payfiaddress, abi } from "@/contracts/payfi";
 
-// 表单验证模式
 const formSchema = z.object({
   name: z.string().nonempty("nonempty"),
   email: z.string().email("nonempty"),
   address: z.string().nonempty("nonempty"),
   id_number: z.string().nonempty("nonempty"),
-  approve: z.number()
+  approve: z.string()
 });
 
 export default function MerchantForm() {
@@ -36,13 +35,11 @@ export default function MerchantForm() {
       email: "",
       address: "",
       id_number: "",
-      approve: 0
+      approve: ""
     },
   });
 
-  // 提交处理
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    // 验证错误信息
     const errors = form.formState.errors;
     if (Object.keys(errors).length > 0) {
       const errorMessages = Object.values(errors)
@@ -57,7 +54,8 @@ export default function MerchantForm() {
         email: values.email,
         address: values.address,
         id_number: values.id_number});
-      if(values.approve != 0){
+
+      if(Number(values.approve) != 0){
         await writeContractAsync({
           address: payfiaddress,
           abi,
@@ -66,7 +64,6 @@ export default function MerchantForm() {
         })
       }
       alert("success");
-      form.reset();
     } catch (error) {
       console.error("提交失败", error);
       alert("error");
@@ -131,7 +128,7 @@ export default function MerchantForm() {
             <FormItem>
               <FormLabel>Approve</FormLabel>
               <FormControl>
-                <Input placeholder="ID number" {...field} />
+                <Input placeholder="approve" {...field} />
               </FormControl>
             </FormItem>
           )}

@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Home, Send, MapPin, Search, ShoppingCart } from 'lucide-react';
+import { Home, Send, MapPin, Search, ShoppingCart, ShieldCheck,	History } from 'lucide-react';
 import DataTable from '../table/table';
 import MerchantForm from '../form/merchantform';
 import Index from '@/components/index/index';
@@ -17,12 +17,15 @@ export default function BottomTabs() {
           <Index />
         </TabsContent>
         <TabsContent value="send">
+          <div className='text-center'>Transfer</div>
           <Payfi />
         </TabsContent>
         <TabsContent value="history">
+          <div className='text-center'>Transaction History</div>
           <DataTable />
         </TabsContent>
         <TabsContent value="merchant">
+          <div className='text-center'>Apply for Merchant</div>
           <MerchantForm />
         </TabsContent>
       </div>
@@ -49,7 +52,7 @@ export default function BottomTabs() {
           className="flex flex-col items-center"
           aria-label="History"
         >
-          <MapPin className="w-5 h-5" />
+          <	History className="w-5 h-5" />
           <span className="text-xs">History</span>
         </TabsTrigger>
         <TabsTrigger
@@ -57,7 +60,7 @@ export default function BottomTabs() {
           className="flex flex-col items-center"
           aria-label="Merchant"
         >
-          <ShoppingCart className="w-5 h-5" />
+          <ShieldCheck className="w-5 h-5" />
           <span className="text-xs">KYC</span>
         </TabsTrigger>
       </TabsList>

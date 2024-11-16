@@ -1,4 +1,3 @@
-// components/Index.tsx
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -17,8 +16,11 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DetailDialog from './detail';
+import axios from 'axios';
+import { useAccount } from 'wagmi';
+import { useIsMerchant } from '../auth/merchant';
 
-type Payment = {
+export type Payment = {
   id: number;
   status: 'processing' | 'success' | 'failed';
   to: string;
@@ -27,82 +29,84 @@ type Payment = {
   totalAmount: number;
   currentAmount: number;
   from: string;
+  type: 'merchant' | 'user'; // 添加类型字段
 };
 
 export default function DataTable() {
-  const [data, setData] = useState<Payment[]>([]);
-  const [page, setPage] = useState(1);
+  const { address } = useAccount();
+  const isMerchant = useIsMerchant();
+
+  const [merchantData, setMerchantData] = useState<Payment[]>([]);
+  const [userData, setUserData] = useState<Payment[]>([]);
+
+  const [merchantPage, setMerchantPage] = useState(1);
+  const [userPage, setUserPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMoreMerchant, setHasMoreMerchant] = useState(true);
+  const [hasMoreUser, setHasMoreUser] = useState(true);
+
   const [activeTab, setActiveTab] = useState<'merchant' | 'user'>('merchant');
   const observer = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // 用于控制详情对话框的状态
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  // 行点击事件，打开详情对话框
   const handleRowClick = (payment: Payment) => {
     setSelectedPayment(payment);
     setIsDetailOpen(true);
   };
 
-  // 模拟数据获取函数
   const fetchData = async (
     page: number,
-    pageSize: number,
-    type: 'merchant' | 'user'
-  ): Promise<Payment[]> => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    pageSize: number
+  ): Promise<{ merchantData: Payment[]; userData: Payment[] }> => {
+    try {
+      const response = await axios.get(
+        `/api/transactions?target=${address}`
+      );
+      console.log(response.data)
+      const combinedData: Payment[] = response.data;
 
-    const totalDataCount = 50;
-    const startId = (page - 1) * pageSize + 1;
-    const endId = Math.min(startId + pageSize - 1, totalDataCount);
+      const merchantData: Payment[] = combinedData.filter(
+        (item) => item.from == address
+      );
+      const userData: Payment[] = combinedData.filter(
+        (item) => item.from != address
+      );
 
-    if (startId > totalDataCount) {
-      return [];
+      return { merchantData, userData };
+    } catch (error) {
+      console.error('加载数据失败', error);
+      return { merchantData: [], userData: [] };
     }
-
-    const newData: Payment[] = Array.from(
-      { length: endId - startId + 1 },
-      (_, i) => ({
-        id: startId + i,
-        status:
-          type === 'merchant'
-            ? ((startId + i) % 3 === 0
-                ? 'processing'
-                : (startId + i) % 3 === 1
-                ? 'success'
-                : 'failed')
-            : 'success', // 假设用户 Tab 的数据状态全是 success
-        from: `0xFromAddress${startId + i}`, // 保留 'from' 字段用于详情对话框
-        to: `0xToAddress${startId + i}`,
-        consumerAdd: `0x456${type === 'merchant' ? '' : '-USER'}`,
-        time: `剩余时间 ${(startId + i)}`,
-        totalAmount: 1000 + i,
-        currentAmount: 50 + i,
-      })
-    );
-
-    return newData;
   };
 
   const loadData = async () => {
-    if (isLoading || !hasMore) return;
+    if (isLoading) return;
 
     setIsLoading(true);
 
     try {
       const pageSize = 15;
-      const newData = await fetchData(page, pageSize, activeTab);
+      const page = activeTab === 'merchant' ? merchantPage : userPage;
 
-      if (newData.length < pageSize || newData.length === 0) {
-        setHasMore(false);
+      const { merchantData: newMerchantData, userData: newUserData } =
+        await fetchData(page, pageSize);
+
+      if (activeTab === 'merchant') {
+        if (newMerchantData.length < pageSize) {
+          setHasMoreMerchant(false);
+        }
+        setMerchantData((prevData) => [...prevData, ...newMerchantData]);
+        setMerchantPage((prevPage) => prevPage + 1);
+      } else {
+        if (newUserData.length < pageSize) {
+          setHasMoreUser(false);
+        }
+        setUserData((prevData) => [...prevData, ...newUserData]);
+        setUserPage((prevPage) => prevPage + 1);
       }
-
-      setData((prevData) => [...prevData, ...newData]);
-      setPage((prevPage) => prevPage + 1);
     } catch (error) {
       console.error('加载数据失败', error);
     } finally {
@@ -111,11 +115,19 @@ export default function DataTable() {
   };
 
   useEffect(() => {
-    // 切换 Tab 时重置数据
-    setData([]);
-    setPage(1);
-    setHasMore(true);
-    loadData();
+    if (activeTab === 'merchant') {
+      if (merchantData.length === 0) {
+        setMerchantPage(1);
+        setHasMoreMerchant(true);
+        loadData();
+      }
+    } else {
+      if (userData.length === 0) {
+        setUserPage(1);
+        setHasMoreUser(true);
+        loadData();
+      }
+    }
   }, [activeTab]);
 
   useEffect(() => {
@@ -123,8 +135,13 @@ export default function DataTable() {
 
     observer.current = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore) {
-          loadData();
+        if (entries[0].isIntersecting) {
+          if (
+            (activeTab === 'merchant' && hasMoreMerchant) ||
+            (activeTab === 'user' && hasMoreUser)
+          ) {
+            loadData();
+          }
         }
       },
       {
@@ -141,23 +158,23 @@ export default function DataTable() {
     return () => {
       if (observer.current) observer.current.disconnect();
     };
-  }, [hasMore, isLoading]);
+  }, [activeTab, hasMoreMerchant, hasMoreUser, isLoading]);
 
-  // 定义表格列，移除了 'from' 和 'actions' 列
+  const dataToRender = activeTab === 'merchant' ? merchantData : userData;
+
   const columns: ColumnDef<Payment>[] = [
     { accessorKey: 'to', header: 'To' },
     { accessorKey: 'status', header: 'Status' },
   ];
 
   const table = useReactTable({
-    data,
+    data: dataToRender,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
 
-  // 渲染表格
   const renderTable = () => (
-    <Table>
+    <Table className='bg-white'>
       <TableHeader>
         <TableRow>
           {table.getFlatHeaders().map((header) => (
@@ -194,10 +211,12 @@ export default function DataTable() {
         onValueChange={(value) => setActiveTab(value as 'merchant' | 'user')}
       >
         <TabsList className="flex mb-4">
-          <TabsTrigger value="merchant" className="flex-1 text-center">
-            Merchant
-          </TabsTrigger>
-          <div className="w-px bg-gray-300 mx-2 h-6 self-center" /> {/* 分隔线 */}
+          {isMerchant && (
+            <TabsTrigger value="merchant" className="flex-1 text-center">
+              Merchant
+            </TabsTrigger>
+          )}
+          <div className="w-px bg-gray-300 mx-2 h-6 self-center" />
           <TabsTrigger value="user" className="flex-1 text-center">
             User
           </TabsTrigger>
@@ -208,7 +227,10 @@ export default function DataTable() {
 
           {isLoading && <div className="text-center p-4">loading...</div>}
 
-          {!hasMore && <div className="text-center p-4">no more</div>}
+          {((activeTab === 'merchant' && !hasMoreMerchant) ||
+            (activeTab === 'user' && !hasMoreUser)) && (
+            <div className="text-center p-4">no more</div>
+          )}
 
           <div ref={loadMoreRef}></div>
 
@@ -216,7 +238,8 @@ export default function DataTable() {
             <DetailDialog
               payment={selectedPayment}
               open={isDetailOpen}
-              onOpenChange={(open) => setIsDetailOpen(open)}
+              onOpenChange={(open: boolean) => setIsDetailOpen(open)}
+              role={activeTab}
             />
           )}
         </TabsContent>

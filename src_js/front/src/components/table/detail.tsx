@@ -14,9 +14,22 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useIsMerchant } from '../auth/merchant';
+import { Payment } from './table'
+import { Input } from '../ui/input';
 
-export default function DetailDialog({ payment, open, onOpenChange }) {
+type DetailDialogProps = {
+  payment: Payment; // 根据实际数据类型定义
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  role: 'merchant' | 'user';
+};
+
+export default function DetailDialog({ payment, open, onOpenChange, role }: DetailDialogProps):React.ReactNode {
   const isMerchant = useIsMerchant();
+  const [amount, setAmount] = React.useState('');
+  const refund = ()=>{
+
+  }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -32,24 +45,28 @@ export default function DetailDialog({ payment, open, onOpenChange }) {
             <strong>Status:</strong> {payment.status}
           </div>
           <div>
-            <strong>From:</strong> {payment.from}
+            <strong>Consumer:</strong> {payment.from}
           </div>
           <div>
-            <strong>To:</strong> {payment.to}
+            <strong>Merchant:</strong> {payment.to}
           </div>
           <div>
-            <strong>Consumer Address:</strong> {payment.consumerAdd}
-          </div>
-          <div>
-            <strong>Time:</strong> {payment.time}
+            <strong>Time Left:</strong> {payment.time}
           </div>
           <div>
             <strong>Total Amount:</strong> {payment.totalAmount}
           </div>
           <div>
-            <strong>Current Amount:</strong> {payment.currentAmount}
+            <strong>Repaid Amount:</strong> {payment.currentAmount}
           </div>
-          {isMerchant && <Button>pay</Button>}
+          {role=="merchant" &&
+          <div>
+            <strong>amount:</strong> 
+            <Input value={amount} // 绑定状态值
+              onChange={(e) => setAmount(e.target.value)}>
+            </Input>
+            <Button onClick={()=>eval(amount)} className='mt-4'>pay</Button>
+          </div> }
         </div>
         <DialogFooter>
           <DialogClose asChild>
