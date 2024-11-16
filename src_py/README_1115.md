@@ -11,6 +11,8 @@ Based on:
 
 # Setup
 
+## Run Python code in TEE(Trusted Execution Environment)
+
 ### 1. git clone, with the submodule: swarm
 
 ```bash
@@ -22,7 +24,7 @@ or you can use:
 
 ```bash
 git clone https://github.com/lanigon/timefi.git
-cd timefi
+cd timefi/src_py
 git submodule update --init --recursive
 ```
 
@@ -31,18 +33,6 @@ Now there should be a `swarm` directory in the `src_py` directory, which is the 
 Like this:
 
 ![swarm-eg](docs/swarm_eg.png)
-
-Then install the Python packages:
-
-```bash
-cd src_py
-pip install -r requirements.txt
-
-# then, install swarm:
-
-cd src_py/swarm
-pip install .
-```
 
 Then install the Nillion SDK:
 
@@ -64,12 +54,7 @@ nilup 86bb6bd5262c9a223f0895670bba2bfe37ca02ef
 tools-config 86bb6bd5262c9a223f0895670bba2bfe37ca02ef
 ```
 
-**Very Important Notice:**
-
-> `GLIB_C_2.34` or above is required, or you will fail to launch `nillion-devnet`.
-
-
-### 2. Create a `.env` file
+### 1. Create a `.env` file
 The very first thing you need to do is to create a `.env` file in the `src_py` directory. 
 
 Because the `api_server.py` will first read the environment variables from the `.env` file.
@@ -91,13 +76,38 @@ OPENAI_BASE_URL="https://open.bigmodel.cn/api/paas/v4/"     # remember to change
 ETHERSCAN_API_KEY="your_api_key_here"
 ```
 
-### 3. Compile Nada computing program
+### 2. Build Docker Image
 
-Nada is a tool developed by Nillion, for more refer to [this link](https://docs.nillion.com/python-quickstart#write-your-first-nada-program)
+Our code are running in the TEE, so we cannot normally run it directly on the host machine. We need to build a Docker image and run it in the TEE.
 
+Use the following command to build the Docker image:
+
+```bash
+cd src_py           # NOTICE: you MUST cd to this python src directory, or the Dockerfile will not work.
+docker build -t your-dapp:latest .
+```
+
+
+### 3. Launch *2* Docker Containers simultaneously
+
+The **first** container is the TEE simulator, which is offered by Phala Network:
+
+```bash
+docker run --rm -p 8090:8090 phalanetwork/tappd-simulator:latest
+```
+
+And then, **open another terminal** and run the Docker image you just built, as the AI service:
+
+```bash
+docker run --rm -p 3000:3000 your-dapp:latest
+```
 
 # How to evaluate the wallet credit and base_number?
 
 We have designed a pipeline for this:
+
+![cn-pipe](docs/AI-eval-pipe-cn.png)
+
+For english version, we have:
 
 ![en-pipe](docs/AI-eval-pipe-en.png)
