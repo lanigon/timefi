@@ -228,7 +228,8 @@ def create_bkok_nillion_agent_wrapper(agent_name: str,
                                       agent_instruction: str,
                                       user_address: str,
                                       debug: bool=False) -> BkokAgent:
-    
+    """In low level, it will reuse the cached nlm instance, but the top level agent will be created and destroyed
+        every time."""
     def exec_nillion_func(context_variables: dict, credit_score: int, risk_level: int):
         """Get credit score and risk level from previous agent, and store to Nillion to compute."""
         global g_user_storage
