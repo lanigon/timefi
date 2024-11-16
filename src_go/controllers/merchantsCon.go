@@ -41,6 +41,21 @@ func GetMerchantByIDHandler(c *gin.Context, service services.MerchantService) {
 	c.JSON(http.StatusOK, merchant)
 }
 
+func GetMerchantByAddressHandler(c *gin.Context, service services.MerchantService) {
+	addressParam := c.Query("address")
+	if addressParam == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Address parameter is required"})
+		return
+	}
+
+	merchant, err := service.GetMerchantByAddress(addressParam)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Merchant not found"})
+		return
+	}
+	c.JSON(http.StatusOK, merchant)
+}
+
 // Handler for getting all merchants
 func GetAllMerchantsHandler(c *gin.Context, service services.MerchantService) {
 	merchants, err := service.GetAllMerchants()
