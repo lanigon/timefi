@@ -13,19 +13,18 @@ export function withAuth(Component) {
     const [isChecking, setIsChecking] = useState(true);
 
     useEffect(() => {
-      // 添加延迟（例如 2 秒）
       const timer = setTimeout(() => {
         if (!isLoggedIn) {
           router.push('/');
         }
         setIsChecking(false);
-      }, 2000); // 延迟时间以毫秒为单位
+      }, 500); // 延迟时间以毫秒为单位
 
       return () => clearTimeout(timer);
     }, [isLoggedIn, router]);
 
     if (isChecking || isConnecting) {
-      return <div>...</div>;
+      return <div></div>;
     }
 
     if (!isConnected) {

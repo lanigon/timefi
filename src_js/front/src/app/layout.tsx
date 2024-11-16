@@ -37,7 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en">
         <body
-          className="flex min-h-screen w-full items-center justify-center px-5 md:px-10 bg-primary-50"
+          className="flex min-h-screen w-full justify-center md:bg-primary-50"
         >            
           <TelegramProvider>
             {children}

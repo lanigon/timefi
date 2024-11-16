@@ -21,12 +21,15 @@ import {withAuth} from "@/components/auth/auth";
 //   });
 // };
 
-export function New() {
+export function Dashboard() {
   return (
-    <div className="max-w-xl h-screen mx-auto">
-      <BottomTabs />
+    <div className="flex justify-center mt-4 bg-white rounded-3xl">
+      <div className="bg-gray-100 rounded-3xl shadow-lg w-full max-w-xl min-w-[320px] p-6 overflow-hidden"> {/* 背景容器 */}
+        <BottomTabs />
+      </div>
     </div>
-  )
+  );
 }
 
-export default withAuth(New)
+
+export default withAuth(Dashboard)

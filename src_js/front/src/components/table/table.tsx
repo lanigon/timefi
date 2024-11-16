@@ -1,4 +1,3 @@
-// components/DataTable.tsx
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -15,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 
 type Payment = {
@@ -29,14 +29,14 @@ type Payment = {
 // 定义列
 const columns: ColumnDef<Payment>[] = [
   { accessorKey: 'id', header: 'ID' },
-  { accessorKey: 'status', header: '状态' },
-  { accessorKey: 'consumerAdd', header: '消费者地址' },
-  { accessorKey: 'time', header: '剩余时间' },
-  { accessorKey: 'totalAmount', header: '总金额' },
-  { accessorKey: 'currentAmount', header: '当前金额' },
+  { accessorKey: 'status', header: 'status' },
+  { accessorKey: 'consumerAdd', header: 'address' },
+  { accessorKey: 'time', header: 'remaining' },
+  { accessorKey: 'totalAmount', header: 'total' },
+  { accessorKey: 'currentAmount', header: 'paid' },
   {
     id: 'actions',
-    header: '操作',
+    header: 'action',
     cell: ({ row }) => (
       <div className="flex space-x-2">
         <Button
@@ -63,8 +63,9 @@ export default function DataTable() {
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [activeTab, setActiveTab] = useState<'merchant' | 'user'>('merchant'); // 当前选中的 Tab
   const observer = useRef<IntersectionObserver | null>(null);
-  const loadMoreRef = useRef(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   // 操作函数
   const handleView = (payment: Payment) => {
@@ -76,7 +77,11 @@ export default function DataTable() {
   };
 
   // 模拟获取数据的函数
-  const fetchData = async (page: number, pageSize: number): Promise<Payment[]> => {
+  const fetchData = async (
+    page: number,
+    pageSize: number,
+    type: 'merchant' | 'user'
+  ): Promise<Payment[]> => {
     // 模拟延迟
     await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -88,14 +93,24 @@ export default function DataTable() {
       return [];
     }
 
-    const newData: Payment[] = Array.from({ length: endId - startId + 1 }, (_, i) => ({
-      id: startId + i,
-      status: ((startId + i) % 3 === 0) ? 'processing' : ((startId + i) % 3 === 1) ? 'success' : 'failed',
-      consumerAdd: `0x456`,
-      time: `剩余时间 ${(startId + i)}`,
-      totalAmount: 1000,
-      currentAmount: 50,
-    }));
+    const newData: Payment[] = Array.from(
+      { length: endId - startId + 1 },
+      (_, i) => ({
+        id: startId + i,
+        status:
+          type === 'merchant'
+            ? ((startId + i) % 3 === 0
+                ? 'processing'
+                : (startId + i) % 3 === 1
+                ? 'success'
+                : 'failed')
+            : 'success', // 假设用户 Tab 的数据状态全是 success
+        consumerAdd: `0x456${type === 'merchant' ? '' : '-USER'}`,
+        time: `剩余时间 ${(startId + i)}`,
+        totalAmount: 1000,
+        currentAmount: 50,
+      })
+    );
 
     return newData;
   };
@@ -107,14 +122,14 @@ export default function DataTable() {
 
     try {
       const pageSize = 15;
-      const newData = await fetchData(page, pageSize);
+      const newData = await fetchData(page, pageSize, activeTab);
 
       if (newData.length < pageSize || newData.length === 0) {
         setHasMore(false);
       }
 
       setData((prevData) => [...prevData, ...newData]);
-      setPage((prevPage) => prevPage + 1); // 确保在成功加载数据后递增 page
+      setPage((prevPage) => prevPage + 1);
     } catch (error) {
       console.error('加载数据失败', error);
     } finally {
@@ -123,17 +138,28 @@ export default function DataTable() {
   };
 
   useEffect(() => {
+    // 切换 Tab 时重置数据
+    setData([]);
+    setPage(1);
+    setHasMore(true);
     loadData();
-  }, []);
+  }, [activeTab]);
 
   useEffect(() => {
     if (observer.current) observer.current.disconnect();
 
-    observer.current = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasMore) {
-        loadData();
+    observer.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          loadData();
+        }
+      },
+      {
+        root: null,
+        rootMargin: '0px',
+        threshold: 1.0,
       }
-    });
+    );
 
     if (loadMoreRef.current) {
       observer.current.observe(loadMoreRef.current);
@@ -148,43 +174,85 @@ export default function DataTable() {
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    // 不需要分页模型
   });
 
   return (
     <div className="p-4">
-      merchant, user
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {table.getFlatHeaders().map((header) => (
-              <TableHead key={header.id}>
-                {header.isPlaceholder
-                  ? null
-                  : header.column.columnDef.header}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
-                  {cell.renderValue()}
-                </TableCell>
+      {/* Tab 切换 */}
+      <Tabs
+        defaultValue="merchant"
+        onValueChange={(value) => setActiveTab(value as 'merchant' | 'user')}
+      >
+        <TabsList className="mb-4">
+          <TabsTrigger value="merchant">Merchant</TabsTrigger>
+          <TabsTrigger value="user">User</TabsTrigger>
+        </TabsList>
+
+        {/* Merchant 数据 */}
+        <TabsContent value="merchant">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {table.getFlatHeaders().map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : header.column.columnDef.header}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>{cell.renderValue()}</TableCell>
+                  ))}
+                </TableRow>
               ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+            </TableBody>
+          </Table>
 
-      {isLoading && <div className="text-center p-4">加载中...</div>}
+          {isLoading && <div className="text-center p-4">加载中...</div>}
 
-      {!hasMore && <div className="text-center p-4">没有更多数据了</div>}
+          {!hasMore && <div className="text-center p-4">没有更多数据了</div>}
 
-      {/* 用于触发加载更多的元素 */}
-      <div ref={loadMoreRef}></div>
+          <div ref={loadMoreRef}></div>
+        </TabsContent>
+
+        {/* User 数据 */}
+        <TabsContent value="user">
+          {/* 数据直接复用 Merchant 内容 */}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {table.getFlatHeaders().map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : header.column.columnDef.header}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>{cell.renderValue()}</TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {isLoading && <div className="text-center p-4">加载中...</div>}
+
+          {!hasMore && <div className="text-center p-4">没有更多数据了</div>}
+
+          <div ref={loadMoreRef}></div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

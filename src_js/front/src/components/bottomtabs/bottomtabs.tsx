@@ -1,3 +1,4 @@
+// components/BottomTabs.tsx
 'use client';
 
 import React from 'react';
@@ -14,7 +15,7 @@ export default function BottomTabs() {
   return (
     <Tabs defaultValue="home" className="w-full flex flex-col">
       {/* 内容区域 */}
-      <div className="flex-1 overflow-auto p-4"> 
+      <div className="flex-1 overflow-auto"> 
         <TabsContent value="home">
           <Index />
         </TabsContent>
@@ -26,10 +27,9 @@ export default function BottomTabs() {
           <DataTable />
         </TabsContent>
         <TabsContent value="query">
-          <PaymentForm />
+          <SearchMerchant />
         </TabsContent>
         <TabsContent value="merchant">
-          <SearchMerchant />
           <MerchantForm />
         </TabsContent>
       </div>
@@ -72,7 +72,7 @@ export default function BottomTabs() {
           className="flex flex-col items-center"
           aria-label="Merchant"
         >
-          <ShoppingCart className="w-5 h-5" /> {/* 使用 ShoppingCart 图标 */}
+          <ShoppingCart className="w-5 h-5" />
           <span className="text-xs">Merchant</span>
         </TabsTrigger>
       </TabsList>

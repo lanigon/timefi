@@ -31,16 +31,13 @@ export default function Home() {
 
   // 用户未登录，渲染主页内容
   return (
-    <div className="flex flex-col w-full items-center justify-items-center min-h-screen gap-16 font-[family-name:var(--font-geist-sans)]">
-      this is introduction
+    <div className="flex flex-col w-full items-center justify-items-center 
+    min-h-screen gap-16 font-[family-name:var(--font-geist-sans)] mt-12">
+      TimeFi
+      start and start again
       <main className="flex flex-col gap-8 row-start-2 items-center sm:items-center w-full">
         <Dynamic />
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <Link href="/dashboard">
-          666
-        </Link>
-      </footer>
     </div>
   );
 }
