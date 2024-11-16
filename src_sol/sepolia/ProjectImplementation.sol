@@ -215,11 +215,8 @@ contract ProjectImplementation is ERC20, Ownable {
             uint256 amount = loan.amount - loan.repaidAmount;
             require(balanceOf(loan.merchant) >= (amount), "Insufficient balance for repayment");
 
-
-            // 从商家账户转移未偿还的金额到买家
             transferFrom(loan.merchant, loan.buyer, amount);
 
-            // 更新借款记录
             loan.repaidAmount = loan.amount;
             loan.isRepaid = true;
             merchantCurrentLoans[loan.merchant] -= amount;
