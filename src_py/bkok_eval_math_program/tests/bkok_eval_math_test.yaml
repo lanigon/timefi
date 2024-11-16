@@ -1,0 +1,11 @@
+---
+program: bkok_eval_math_program
+inputs:
+  credit_score: 8500
+  risk_level: 300
+  old_base_number: 1000
+  old_credit: 100
+expected_outputs:
+  new_base_number: 1160
+  new_credit: 105
+  new_limit: 1218

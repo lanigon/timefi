@@ -23,16 +23,12 @@ def step_1_stat_txs(txs: List[dict],
         print(txs)
         return f"Error: {txs}"
     for i, tx in enumerate(txs):
-        from_addr = tx.get('from')
-        to_addr = tx.get('to')
+        from_addr = tx.get('buyer')
+        to_addr = tx.get('merchant')
         from_addr = from_addr.lower()
         to_addr = to_addr.lower()
 
-        tx_value = Web3.from_wei(int(tx.get('value')), 'ether')
-        # .7f
-        tx_value = f"{tx_value:.7f}"
-        if tx_value == "0.0000000":
-            continue
+        tx_value = int(tx.get("amount"))
         
         tx_type = ""
         if i == 0:
@@ -53,86 +49,87 @@ def step_1_stat_txs(txs: List[dict],
                 if from_addr not in tx_addr_mapping:
                     tx_addr_mapping[from_addr] = f"WALLET_{i+2}"
 
-        utc_time = datetime.fromtimestamp(int(tx.get('timeStamp')))
-        if utc_time > last_eval_time:
-            rt_dict = {
-                "from": tx_addr_mapping.get(from_addr, ""),
-                "to": tx_addr_mapping.get(to_addr, ""),
-                "value": tx_value,
-                "time": utc_time,
-                "tx_type": tx_type,
-            }
-            rt_dicts.append(rt_dict)
+        # utc_time = datetime.fromtimestamp(int(tx.get('timeStamp')))
+        # if utc_time > last_eval_time:
+        rt_dict = {
+            "loan_id": tx.get('loanId'),
+            "from": tx_addr_mapping.get(from_addr, ""),
+            "to": tx_addr_mapping.get(to_addr, ""),
+            "value": tx_value,
+            "due_time": datetime.fromtimestamp(int(tx.get("dueDate"))),
+            "now_time": datetime.now(),
+            "tx_type": tx_type,
+            "return_amount": tx.get('repaidAmount'),
+            "isRepaid": tx.get('isRepaid'),
+        }
+        rt_dicts.append(rt_dict)
     return rt_dicts
 
 
-def step_2_agent_pre_analysis(tx_dicts: List[dict]) -> str:
-    """This function takes a list of dictionaries containing transaction information and performs a pre-analysis,
-    returning a summary string."""
-    # Variables for analysis
-    total_inflow = 0.0
-    total_outflow = 0.0
-    daily_trend = defaultdict(lambda: {'volume': 0, 'total_value': 0.0})
-    large_flows = defaultdict(float)
-    small_flows = defaultdict(float)
-    threshold = 0.1  # Define a threshold to classify large and small transactions
-    balance_history = []
-    current_balance = 0.0
-    
-    # Process transactions
-    for tx in tx_dicts:
-        value = float(tx['value'])
-        time: datetime = tx['time']
-        tx_type = tx['tx_type']
-        
-        # Update balance based on transaction type
-        if tx_type == 'in':
-            total_inflow += value
-            current_balance += value
-        elif tx_type == 'out':
-            total_outflow += value
-            current_balance -= value
-        
-        # Track balance history for volatility analysis
-        balance_history.append(current_balance)
-        
-        # Categorize transaction as large or small
-        recipient = tx['to'] if tx_type == 'out' else tx['from']
-        if value >= threshold:
-            large_flows[recipient] += value
+def step_2_agent_pre_analysis(rt_dicts: List[dict]) -> str:
+    """分析贷款数据，生成统计和趋势报告"""
+    # 初始化变量
+    total_loan_amount = 0.0
+    total_return_amount = 0.0
+    overdue_loans = []
+    loan_trends = defaultdict(lambda: {'count': 0, 'total_value': 0.0})
+    repaid_status = {"Fully Repaid": 0, "Partially Repaid": 0, "Not Repaid": 0}
+    now = datetime.now()
+
+    # 遍历所有贷款记录
+    for loan in rt_dicts:
+        loan_id = loan["loan_id"]
+        loan_value = float(loan["value"])
+        return_amount = float(loan["return_amount"] or 0)
+        due_time = loan["due_time"]
+        is_repaid = loan["isRepaid"]
+
+        # 更新总金额和已还款金额
+        total_loan_amount += loan_value
+        total_return_amount += return_amount
+
+        # 计算还款状态
+        if is_repaid:
+            repaid_status["Fully Repaid"] += 1
+        elif return_amount > 0:
+            repaid_status["Partially Repaid"] += 1
         else:
-            small_flows[recipient] += value
-        
-        # Update daily trend
-        date_key = time.date()
-        daily_trend[date_key]['volume'] += 1
-        daily_trend[date_key]['total_value'] += value
+            repaid_status["Not Repaid"] += 1
 
-    # Summary of cash flow trend
-    liquidity = "active" if total_inflow + total_outflow > 1.0 else "passive"
-    trend_summary = f"[Liquidity trend]: {liquidity} with total inflow: {total_inflow:.2f} and outflow: {total_outflow:.2f}."
-    
-    # Balance volatility analysis
-    avg_balance = sum(balance_history) / len(balance_history)
-    balance_changes = [abs(balance_history[i] - balance_history[i-1]) for i in range(1, len(balance_history))]
-    volatility = sum(balance_changes) / len(balance_changes) if balance_changes else 0
-    volatility_summary = f"Average balance: {avg_balance:.2f}, with a volatility of {volatility:.2f}."
-    
-    # Cash flow categorization
-    large_flow_summary = ", ".join([f"{key}: {value:.2f}" for key, value in large_flows.items()])
-    small_flow_summary = ", ".join([f"{key}: {value:.2f}" for key, value in small_flows.items()])
-    
-    # Daily trend summary
-    daily_summary = "\n".join([f"{date}: Volume: {data['volume']}, Total Value: {data['total_value']:.2f}"
-                               for date, data in daily_trend.items()])
+        # 检查是否逾期未还清
+        if due_time < now and not is_repaid:
+            overdue_loans.append({
+                "loan_id": loan_id,
+                "due_time": due_time,
+                "remaining_amount": loan_value - return_amount
+            })
 
-    # Final summary
+        # 更新到期趋势
+        date_key = due_time.date()
+        loan_trends[date_key]["count"] += 1
+        loan_trends[date_key]["total_value"] += loan_value
+
+    # 生成分析报告
+    overdue_summary = "\n".join([
+        f"Loan ID: {loan['loan_id']}, Due Time: {loan['due_time']}, Remaining Amount: {loan['remaining_amount']:.2f}"
+        for loan in overdue_loans
+    ]) or "No overdue loans."
+
+    trend_summary = "\n".join([
+        f"{date}: Count: {data['count']}, Total Value: {data['total_value']:.2f}"
+        for date, data in sorted(loan_trends.items())
+    ])
+
     summary = (
-        f"{trend_summary}\n"
-        f"[Balance volatility]: {volatility_summary}\n"
-        f"[Large cash flow]: {large_flow_summary}\n"
-        f"[Small cash flow]: {small_flow_summary}\n"
-        f"[Daily transaction trends]: {daily_summary}"
+        f"Total Loan Amount: {total_loan_amount:.2f}\n"
+        f"Total Return Amount: {total_return_amount:.2f}\n"
+        f"Repayment Progress: {(total_return_amount / total_loan_amount) * 100:.2f}%\n"
+        f"Repayment Status:\n"
+        f"  Fully Repaid: {repaid_status['Fully Repaid']}\n"
+        f"  Partially Repaid: {repaid_status['Partially Repaid']}\n"
+        f"  Not Repaid: {repaid_status['Not Repaid']}\n"
+        f"Overdue Loans:\n{overdue_summary}\n"
+        f"Loan Trends by Due Date:\n{trend_summary}"
     )
 
     return summary

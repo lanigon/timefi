@@ -1,0 +1,8 @@
+name = "bkok_eval_math_program"
+version = "0.1.0"
+authors = [""]
+
+[[programs]]
+path = "src/main.py"
+name = "bkok_eval_math_program"
+prime_size = 128
