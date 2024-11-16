@@ -17,12 +17,17 @@ from bkok_agent import (
     BkokAgent, 
     BkokPromptHub,
     AgentResponse,
-    step_agent_async
+    NillionManager,
+    step_agent_async,
+    create_bkok_nillion_agent_wrapper,
+    g_nlm_storage, g_user_storage
 )
 from bkok_utils import (
     BalanceRequest,
     CreditRequest,
     TXSRequest,
+    NillionRequest,
+    RetrivalCreditRequest,
     warp_etherscan_url,
     get_tx_brief
 )
@@ -216,3 +221,38 @@ async def eval_wallet(request: CreditRequest):
     
 
     return rt_dict
+
+
+@app.post("/api/nillion_compute")
+async def nillion_compute(request: NillionRequest):
+    user_address = request.wallet_address
+    credit_score = request.credit_score
+    risk_level = request.risk_level
+
+    global bkok_prompt_hub
+
+    nillion_agent = create_bkok_nillion_agent_wrapper(
+        agent_name="Storage_Compute_Agent",
+        agent_instruction=bkok_prompt_hub.nillion_agent_instruction("exec_nillion_func"),
+        user_address=user_address,
+        debug=True
+    )
+
+    agent_res: AgentResponse = nillion_agent.run(
+        [{"role": "user", "content": f"The merchant's credit score is: {credit_score}, and risk level is: {risk_level}, compute the new limit for me."}]
+    )
+    return {"content": agent_res.assistant_messages}
+
+
+@app.post("/api/retrival_credit")
+async def retrival_credit(request: RetrivalCreditRequest):
+    global g_nlm_storage, g_user_storage
+    wallet_address = request.wallet_address
+
+    if wallet_address not in g_nlm_storage:
+        return {"content": "wallet address not exist in AI backend, please evaluate first!"}
+
+    store_id = g_user_storage[wallet_address]
+    nlm: NillionManager = g_nlm_storage[wallet_address]
+    int_credit_score = await nlm.retrieve_secret_integer(store_id=store_id, secret_name="old_credit")
+    return {"content": int_credit_score / 100}

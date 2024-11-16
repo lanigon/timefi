@@ -15,15 +15,17 @@ from loguru import logger
 home = os.getenv("HOME")
 load_dotenv(f"{home}/.config/nillion/nillion-devnet.env")
 
+g_program_id = -1
+
 class NillionManager:
-    def __init__(self, wallet_idx: int = 0, user_id_suffix: int=0):
+    def __init__(self, user_address: str, wallet_idx: int=0):
         if wallet_idx < 0 or wallet_idx > 9:
             raise ValueError("Invalid wallet index, must be between 0 and 9.")
         self.cluster_id = os.getenv("NILLION_CLUSTER_ID")
         self.grpc_endpoint = os.getenv("NILLION_NILCHAIN_GRPC")
         self.chain_id = os.getenv("NILLION_NILCHAIN_CHAIN_ID")
 
-        self.seed = f"ethglobal_bankok_user_{user_id_suffix}"    # to specify the different client
+        self.seed = user_address    # to specify the different client
         self.userkey = UserKey.from_seed(self.seed)
         self.nodekey = NodeKey.from_seed(self.seed)
         self.client = create_nillion_client(userkey=self.userkey, nodekey=self.nodekey)
@@ -44,6 +46,11 @@ class NillionManager:
 
     async def prepare_program(self):
         """Pay for store a program"""
+        global g_program_id
+        if g_program_id != -1:
+            self.program_id = g_program_id
+            return
+        
         logger.debug(f"--- Preparing program {self.program_name}")
         receipt_store_program = await get_quote_and_pay(
             self.client,
@@ -57,6 +64,7 @@ class NillionManager:
         )
         program_id = f"{self.client.user_id}/{self.program_name}"
         self.program_id = program_id
+        g_program_id = program_id
 
     async def store_secret_integer(self, secret_value_base_number: int, secret_value_credit: int):
         """Pay for store an integer"""
@@ -137,14 +145,14 @@ class NillionManager:
             await asyncio.sleep(0.05)
     
 
-async def create_nillion_manager() -> NillionManager:
-    nlm = NillionManager()
+async def create_nillion_manager(user_address: str) -> NillionManager:
+    nlm = NillionManager(user_address=user_address)
     await nlm.prepare_program()
     return nlm
 
 
 async def test_main():
-    nlm = await create_nillion_manager()
+    nlm = await create_nillion_manager("0x555")
     new_credit = 100
     new_base_number = 1000
     for i in range(3):

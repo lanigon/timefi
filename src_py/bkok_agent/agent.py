@@ -11,11 +11,14 @@ import requests
 from web3 import Web3
 from loguru import logger
 from datetime import datetime
+import threading
+from queue import Queue
 
 # ========= Custom =========
 from bkok_agent.prompt_hub import BkokPromptHub
 from bkok_utils import complete_etherscan_sepolia_url
 from bkok_agent.math_stats import step_1_stat_txs, step_2_agent_pre_analysis
+from bkok_agent.nillion_tools import NillionManager, create_nillion_manager
 
 load_dotenv()
 
@@ -185,6 +188,113 @@ def create_bkok_agent_wrapper(etherscan_url_prefix: str,
         ctx_vars={"last_eval_time": last_eval_time_utc},
         debug=debug,
         )
+
+g_user_storage: Dict[str, int] = {}
+g_nlm_storage: Dict[str, int] = {}
+
+async def step_nillion_async(credit_score: int, risk_level: int, user_address: str,
+                             old_credit: int=None, old_base_number: int=None, store_id=None) -> Tuple[int, int]:
+    """Either old_credit and old_base_number can be null, or store_id can be null,
+        previous means the first time,
+        latter means after the first time."""
+    global g_nlm_storage
+    nlm: NillionManager = None
+    if user_address not in g_nlm_storage:
+        nlm = await create_nillion_manager(user_address)
+    else:
+        nlm = g_nlm_storage[user_address]
+    if old_credit is not None:
+        # this is the first time
+        new_credit = old_credit
+        new_base_number = old_base_number
+        store_id = await nlm.store_secret_integer(secret_value_base_number=new_base_number, secret_value_credit=new_credit)
+        logger.warning(f"This is the first time, our store_id is: {store_id}")
+    result = await nlm.compute_result(credit_score=credit_score, risk_level=risk_level, store_id=store_id)
+    logger.info(f"Result: {result}")
+    new_credit = result['new_credit']
+    new_base_number = result['new_base_number']
+
+    # after executing, we need store again
+    new_store_id = await nlm.store_secret_integer(secret_value_base_number=new_base_number, 
+                                                  secret_value_credit=new_credit)
+    new_limit = result['new_limit']
+
+    g_nlm_storage[user_address] = nlm
+
+    return new_store_id, new_limit
+
+
+def create_bkok_nillion_agent_wrapper(agent_name: str, 
+                                      agent_instruction: str,
+                                      user_address: str,
+                                      debug: bool=False) -> BkokAgent:
+    
+    def exec_nillion_func(context_variables: dict, credit_score: int, risk_level: int):
+        """Get credit score and risk level from previous agent, and store to Nillion to compute."""
+        global g_user_storage
+        user_address = context_variables.get("user_address", None)
+        if user_address is None:
+            raise ValueError("User address is required.")
+        new_store_id: int = None
+        new_limit: int = None
+        result_queue = Queue()
+
+        def run_async():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                if user_address in g_user_storage:
+                    store_id = g_user_storage[user_address]
+                    logger.warning(f"This is the second time, we have already had a store_id: {store_id}")
+                    result = loop.run_until_complete(
+                        step_nillion_async(
+                            credit_score=credit_score,
+                            risk_level=risk_level,
+                            user_address=user_address,
+                            store_id=store_id
+                        )
+                    )
+                else:
+                    old_credit = 100
+                    old_base_number = 1000
+                    logger.warning(f"This is the first time, we don't have any store id")
+                    result = loop.run_until_complete(
+                        step_nillion_async(
+                            credit_score=credit_score,
+                            risk_level=risk_level,
+                            user_address=user_address,
+                            old_credit=old_credit,
+                            old_base_number=old_base_number
+                        )
+                    )
+                result_queue.put(result)
+            finally:
+                loop.close()
+            
+        thread  = threading.Thread(target=run_async)
+        thread.start()
+        thread.join()
+
+        if result_queue.empty():
+            return "Fail to execute"
+        
+        result = result_queue.get()
+        new_store_id, new_limit = result
+
+        if new_store_id is None:
+            return "Fail to execute"
+        
+        g_user_storage[user_address] = new_store_id
+
+        return f"+ new_store_id: {new_store_id}\n+ new_limit: {new_limit}"
+
+    return create_bkok_agent(
+        agent_name=agent_name,
+        instructions=agent_instruction,
+        functions=[exec_nillion_func],
+        ctx_vars={"user_address": user_address},
+        debug=debug
+    )
 
 
 async def step_agent_async(url_prefix: str, 
