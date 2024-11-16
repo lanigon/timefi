@@ -1,6 +1,6 @@
 ## ReadMe
 
-This is the source code of our contract deploying on Polygon Pos. 
+This is the source code of our contract deploying on Flow Testnet. 
 
 
 
@@ -46,7 +46,7 @@ I implemented and deployed it in Remix. So no extra needs for deploying this con
 
 3. Deploying the `ProjectImplementation.sol`  first. 
 
-   Choose the Polygon Pos Amoy testnet. (Or the local net of remix and hardhat)
+   Choose the Flow Testnet. (Or the local net of remix and hardhat)
    Input the arguments with a Tokenname and Tokensymbol. Keep the contract address for the following steps.
 
 4. Then deploying `RepaymentManager.sol` . Notice that the input argument is the address you copy from step3.

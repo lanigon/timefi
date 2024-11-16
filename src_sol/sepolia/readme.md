@@ -4,11 +4,17 @@ This is the source code of our contract deploying on Sepolia TestNet.
 
 
 
-#### What is PayFi (or TimeFi).
+#### What is TimeFi.
 
-User can buy a product with the revenue of lending a certain amount of money to a merchant for a certain amount of time. You can consider it as user can get their loan interest immediately when they lend money to the merchant, and spend this interest on buying a product from the merchant.
+TimeFi is **a trust-driven transaction platform that enables free products for buyers and time-value earnings for merchants**.
 
-Like user want to buy a cup of coffee, it costs 4u. He can choose to pay it in normal way ---- transfer 4u to the merchant, or he can choose to pay it in PayFi(or TimeFi). In this way, user need lend 400u to the merchant for 7 days, and get the coffee for free.
+The core idea behind **TimeFi** is that users lend a certain amount of coins to merchants for a period of time to purchase their goods. Once the lending period expires, the merchants return the borrowed coins to the users. Essentially, users receive the interest from the loan in advance and use it to buy goods, while merchants exchange their goods for temporary ownership of the coins.
+
+This concept is both innovative and versatile, with significant potential in various scenarios.
+
+On the one hand, **TimeFi is particularly well-suited for small and medium-sized businesses or startups seeking funding**. For example, imagine Alice runs a small flower shop and wants to expand her business. However, bank loans often require complex credit evaluations, lengthy procedures, and come with high interest rates. In such cases, TimeFi would be a more suitable alternative. Alice’s customers can choose to pay via TimeFi, effectively helping her raise funds, and in return, Alice can offer them mutually agreed-upon products, like a bouquet of flowers. Through TimeFi, Alice can secure substantial, negotiable-interest loans over a short period, with the flexibility of repaying the interest in the form of goods. Isn’t that amazing? If I were Alice, I’d be thrilled to use such a model to gradually scale up my shop without the burden of high bank interest rates and tedious processes.
+
+On the other hand, **TimeFi is inherently a trust-based payment method that transforms borrowing into a form of transaction**, placing a strong emphasis on mutual trust among users. This trust motivates users to adopt TimeFi for payments, and in turn, using TimeFi strengthens their trust in each other. This virtuous cycle not only encourages more users to join the TimeFi community but also fosters a more harmonious and friendly ecosystem.
 
 
 
