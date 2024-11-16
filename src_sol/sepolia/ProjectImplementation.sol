@@ -39,6 +39,11 @@ contract ProjectImplementation is ERC20, Ownable {
         _mint(msg.sender, 1000000 * 10**decimals()); 
     }
 
+    // Override the decimals function to return 6, which is the same standard with USDC
+    function decimals() public view virtual override returns (uint8) {
+        return 6;
+    }
+
     // set the MaxLoanLimit of merchant(only owner)
     function setMerchantMaxLoanLimit(address merchant, uint256 maxLimit) external onlyOwner {
         require(merchant != address(0), "Invalid merchant address");
@@ -146,6 +151,38 @@ contract ProjectImplementation is ERC20, Ownable {
         return string(result);
     }
 
+    function getTransactions(address merchant)  external view returns (string memory) {
+        uint256 count = 0;
+        uint256[] memory tempLoanIds = new uint256[](nextLoanId - 1);
+        for (uint256 i = 1; i < nextLoanId; i++) {
+            Loan storage loan = loans[i];
+            if (loan.merchant ==  merchant || loan.buyer ==  merchant) {
+                tempLoanIds[count] = loan.loanId;
+                count++;
+            }
+        }
+        bytes memory result = "[";
+        for (uint256 i = 0; i < count; i++) {
+            Loan storage loan = loans[tempLoanIds[i]];
+            result = abi.encodePacked(
+                result,
+                "{\"loanId\":", uint2str(loan.loanId),
+                ",\"buyer\":\"", addressToString(loan.buyer),
+                "\",\"merchant\":\"", addressToString(loan.merchant),
+                "\",\"amount\":", uint2str(loan.amount),
+                ",\"dueDate\":", uint2str(loan.dueDate),
+                ",\"repaidAmount\":", uint2str(loan.repaidAmount),
+                ",\"isRepaid\":", loan.isRepaid ? "true" : "false",
+                "}"
+            );
+            if (i < count - 1) {
+                result = abi.encodePacked(result, ",");
+            }
+        }
+        result = abi.encodePacked(result, "]");
+        return string(result);
+    }
+
     function uint2str(uint256 _i) internal pure returns (string memory _uintAsString) {
         if (_i == 0) {
             return "0";
@@ -224,7 +261,7 @@ contract ProjectImplementation is ERC20, Ownable {
             emit LoanRepaid(loan.merchant, loan.buyer, amount, loanId);
         }
     }
-    function getLoanIds(address user, address merchant) public view returns (uint256) {
-    return loanCount[user][merchant];
-    }
+    // function getLoanIds(address user, address merchant) public view returns (uint256) {
+    // return loanCount[user][merchant];
+    // }
 }
