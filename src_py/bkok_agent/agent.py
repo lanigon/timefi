@@ -145,29 +145,21 @@ def create_bkok_agent_wrapper(etherscan_url_prefix: str,
         raise ValueError("ETHERSCAN_API_KEY environment variable is not set.")
 
     def fetch_tx_agent_func(context_variables: dict, wallet_address: str) -> str:
-        """Use the Etherscan API to get the balance or transaction list of a wallet address.
+        """Use the custom API to get the balance or transaction list of a wallet address.
             Also analyze the transaction patterns and fund flows, and provide a summary."""
         if not isinstance(wallet_address, str) or wallet_address[1] != 'x':
             return "Invalid wallet address format. Please provide a valid wallet address."
         
         wallet_address = wallet_address.lower()
 
-        # first we get the balance
-        etherscan_balance_url = complete_etherscan_sepolia_url(etherscan_url_prefix, etherscan_api_key, 
-                                                               target_wallet_address=wallet_address, action="balance")
-        response = requests.get(etherscan_balance_url)
-        res: dict = response.json()
-        balance = res.get("result", "")
         rt_str = ""
-        if balance != "":
-            rt_str += f"[Wallet] {wallet_address} balance: {Web3.from_wei(int(balance), 'ether')} ETH\n"
 
         # then we get the transaction list
-        etherscan_txlist_url = complete_etherscan_sepolia_url(etherscan_url_prefix, etherscan_api_key, 
-                                                              target_wallet_address=wallet_address, action="txlist")
+        etherscan_txlist_url = f"http://18.143.117.194:8080/transactions?target={wallet_address}"
         response = requests.get(etherscan_txlist_url)
         res2: dict = response.json()
-        txs: List[dict] = res2.get("result", [])
+        print(res2)
+        txs: List[dict] = res2
         if len(txs) == 0:
             return "No transaction found for this wallet address."
         
