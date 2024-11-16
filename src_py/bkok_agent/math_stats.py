@@ -108,6 +108,9 @@ def step_2_agent_pre_analysis(tx_dicts: List[dict]) -> str:
         daily_trend[date_key]['volume'] += 1
         daily_trend[date_key]['total_value'] += value
 
+    if len(balance_history) == 0:
+        return "No transactions found. No analysis can be performed."
+
     # Summary of cash flow trend
     liquidity = "active" if total_inflow + total_outflow > 1.0 else "passive"
     trend_summary = f"[Liquidity trend]: {liquidity} with total inflow: {total_inflow:.2f} and outflow: {total_outflow:.2f}."

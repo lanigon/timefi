@@ -95,6 +95,22 @@ ETHERSCAN_API_KEY="your_api_key_here"
 
 Nada is a tool developed by Nillion, for more refer to [this link](https://docs.nillion.com/python-quickstart#write-your-first-nada-program)
 
+### 4. Launch the Nada spinning net
+
+```bash
+screen -S nada_net
+nillion-devnet
+```
+
+Then press `Ctrl+A+D` to exit the screen session.
+
+### 5. Launch the API server
+
+```bash
+cd src_py
+uvicorn api_server:app --host 0.0.0.0 --port 3008
+```
+
 
 # How to evaluate the wallet credit and base_number?
 

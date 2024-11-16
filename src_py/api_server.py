@@ -6,7 +6,7 @@ import os
 import asyncio
 import httpx
 from web3 import Web3
-from typing import List
+from typing import List, Dict
 from loguru import logger
 import re
 from datetime import datetime
@@ -40,6 +40,8 @@ etherscan_api_key = None
 
 aclient: AsyncOpenAI = None
 bkok_prompt_hub: BkokPromptHub = None
+
+g_eval_time_utc: Dict[str, datetime] = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -170,13 +172,15 @@ async def get_balance(request: BalanceRequest):
 
 @app.post("/api/eval_wallet")
 async def eval_wallet(request: CreditRequest):
-    global bkok_prompt_hub
+    global bkok_prompt_hub, g_eval_time_utc
     wallet_address = request.wallet_address
-    chain_id = request.chain_id
     use_sepolia = request.use_sepolia
 
-    last_eval_time: str = request.last_eval_time
-    last_eval_time_utc = datetime.fromtimestamp(int(last_eval_time))
+    last_eval_time_utc: str = datetime(1970, 1, 1, 0, 0, 0)
+    if wallet_address in g_eval_time_utc:
+        last_eval_time_utc = g_eval_time_utc[wallet_address]
+
+    # last_eval_time_utc = datetime.fromtimestamp(int(last_eval_time))
 
     url_prefix = "https://api-sepolia.etherscan.io/api?"
 
@@ -193,6 +197,7 @@ async def eval_wallet(request: CreditRequest):
         logger.error(f"Failed to parse AI evaluation result: {e}")
         valid_ans = False
     finally:
+
         if 'credit' not in ai_eval_result or 'risk' not in ai_eval_result or not isinstance(ai_eval_result['credit'], int) or not isinstance(ai_eval_result['risk'], int):
             valid_ans = False
 
@@ -218,7 +223,7 @@ async def eval_wallet(request: CreditRequest):
     rt_dict.update(ai_eval_result)
 
     # ========= Mathematical calculation ==========
-    
+    g_eval_time_utc[wallet_address] = datetime.now()    
 
     return rt_dict
 
