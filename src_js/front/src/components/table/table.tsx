@@ -1,3 +1,4 @@
+// components/Index.tsx
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -15,77 +16,47 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
+import DetailDialog from './detail';
 
 type Payment = {
-  status: 'processing' | 'success' | 'failed';
   id: number;
+  status: 'processing' | 'success' | 'failed';
+  to: string;
   consumerAdd: string;
-  time: string; // remaining time
+  time: string; // 剩余时间
   totalAmount: number;
   currentAmount: number;
+  from: string;
 };
-
-// 定义列
-const columns: ColumnDef<Payment>[] = [
-  { accessorKey: 'id', header: 'ID' },
-  { accessorKey: 'status', header: 'status' },
-  { accessorKey: 'consumerAdd', header: 'address' },
-  { accessorKey: 'time', header: 'remaining' },
-  { accessorKey: 'totalAmount', header: 'total' },
-  { accessorKey: 'currentAmount', header: 'paid' },
-  {
-    id: 'actions',
-    header: 'action',
-    cell: ({ row }) => (
-      <div className="flex space-x-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handleView(row.original)}
-        >
-          查看
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handleEdit(row.original)}
-        >
-          编辑
-        </Button>
-      </div>
-    ),
-  },
-];
 
 export default function DataTable() {
   const [data, setData] = useState<Payment[]>([]);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [activeTab, setActiveTab] = useState<'merchant' | 'user'>('merchant'); // 当前选中的 Tab
+  const [activeTab, setActiveTab] = useState<'merchant' | 'user'>('merchant');
   const observer = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // 操作函数
-  const handleView = (payment: Payment) => {
-    console.log('查看详情：', payment);
+  // 用于控制详情对话框的状态
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // 行点击事件，打开详情对话框
+  const handleRowClick = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setIsDetailOpen(true);
   };
 
-  const handleEdit = (payment: Payment) => {
-    console.log('编辑：', payment);
-  };
-
-  // 模拟获取数据的函数
+  // 模拟数据获取函数
   const fetchData = async (
     page: number,
     pageSize: number,
     type: 'merchant' | 'user'
   ): Promise<Payment[]> => {
-    // 模拟延迟
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    const totalDataCount = 50; // 总数据量
+    const totalDataCount = 50;
     const startId = (page - 1) * pageSize + 1;
     const endId = Math.min(startId + pageSize - 1, totalDataCount);
 
@@ -105,10 +76,12 @@ export default function DataTable() {
                 ? 'success'
                 : 'failed')
             : 'success', // 假设用户 Tab 的数据状态全是 success
+        from: `0xFromAddress${startId + i}`, // 保留 'from' 字段用于详情对话框
+        to: `0xToAddress${startId + i}`,
         consumerAdd: `0x456${type === 'merchant' ? '' : '-USER'}`,
         time: `剩余时间 ${(startId + i)}`,
-        totalAmount: 1000,
-        currentAmount: 50,
+        totalAmount: 1000 + i,
+        currentAmount: 50 + i,
       })
     );
 
@@ -170,87 +143,82 @@ export default function DataTable() {
     };
   }, [hasMore, isLoading]);
 
+  // 定义表格列，移除了 'from' 和 'actions' 列
+  const columns: ColumnDef<Payment>[] = [
+    { accessorKey: 'to', header: 'To' },
+    { accessorKey: 'status', header: 'Status' },
+  ];
+
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
 
+  // 渲染表格
+  const renderTable = () => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          {table.getFlatHeaders().map((header) => (
+            <TableHead key={header.id}>
+              {header.isPlaceholder
+                ? null
+                : (header.column.columnDef.header as React.ReactNode)}
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {table.getRowModel().rows.map((row) => (
+          <TableRow
+            key={row.id}
+            onClick={() => handleRowClick(row.original)}
+            className="cursor-pointer hover:bg-gray-100"
+          >
+            {row.getVisibleCells().map((cell) => (
+              <TableCell key={cell.id}>
+                {cell.renderValue() as React.ReactNode}
+              </TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+
   return (
     <div className="p-4">
-      {/* Tab 切换 */}
       <Tabs
         defaultValue="merchant"
         onValueChange={(value) => setActiveTab(value as 'merchant' | 'user')}
       >
-        <TabsList className="mb-4">
-          <TabsTrigger value="merchant">Merchant</TabsTrigger>
-          <TabsTrigger value="user">User</TabsTrigger>
+        <TabsList className="flex mb-4">
+          <TabsTrigger value="merchant" className="flex-1 text-center">
+            Merchant
+          </TabsTrigger>
+          <div className="w-px bg-gray-300 mx-2 h-6 self-center" /> {/* 分隔线 */}
+          <TabsTrigger value="user" className="flex-1 text-center">
+            User
+          </TabsTrigger>
         </TabsList>
 
-        {/* Merchant 数据 */}
-        <TabsContent value="merchant">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {table.getFlatHeaders().map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : header.column.columnDef.header}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{cell.renderValue()}</TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <TabsContent value={activeTab}>
+          {renderTable()}
 
-          {isLoading && <div className="text-center p-4">加载中...</div>}
+          {isLoading && <div className="text-center p-4">loading...</div>}
 
-          {!hasMore && <div className="text-center p-4">没有更多数据了</div>}
+          {!hasMore && <div className="text-center p-4">no more</div>}
 
           <div ref={loadMoreRef}></div>
-        </TabsContent>
 
-        {/* User 数据 */}
-        <TabsContent value="user">
-          {/* 数据直接复用 Merchant 内容 */}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {table.getFlatHeaders().map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : header.column.columnDef.header}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{cell.renderValue()}</TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          {isLoading && <div className="text-center p-4">加载中...</div>}
-
-          {!hasMore && <div className="text-center p-4">没有更多数据了</div>}
-
-          <div ref={loadMoreRef}></div>
+          {selectedPayment && (
+            <DetailDialog
+              payment={selectedPayment}
+              open={isDetailOpen}
+              onOpenChange={(open) => setIsDetailOpen(open)}
+            />
+          )}
         </TabsContent>
       </Tabs>
     </div>

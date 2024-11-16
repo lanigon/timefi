@@ -5,9 +5,12 @@ import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { useIsLoggedIn } from '@dynamic-labs/sdk-react-core';
 
-export function withAuth(Component) {
-  return function AuthenticatedComponent(props) {
-    const isLoggedIn = useIsLoggedIn() 
+// 使用泛型为高阶组件添加类型支持
+export function withAuth<T extends object>(
+  Component: React.ComponentType<T>
+): React.FC<T> {
+  return function AuthenticatedComponent(props: T) {
+    const isLoggedIn = useIsLoggedIn();
     const { isConnected, isConnecting } = useAccount();
     const router = useRouter();
     const [isChecking, setIsChecking] = useState(true);

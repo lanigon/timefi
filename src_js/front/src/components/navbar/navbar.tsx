@@ -5,7 +5,7 @@ import { DynamicWidget } from "@dynamic-labs/sdk-react-core";
 export default function Navbar() {
   return (
     <div className="w-full flex justify-between px-8 pt-4 z-10 fixed top-0">
-      <Link href="/dashboard"><img src="/favicon.webp" alt="logo" className="w-8 h-8" />
+      <Link href="/dashboard"><img src="/favicon.png" alt="logo" className="w-12 h-10" />
       </Link>
       <DynamicWidget />
     </div>

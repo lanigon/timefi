@@ -4,7 +4,6 @@ import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useIsLoggedIn } from "@dynamic-labs/sdk-react-core"
 
-import Link from 'next/link';
 import Dynamic from '@/components/login/dynemic';
 
 export default function Home() {
@@ -13,28 +12,24 @@ export default function Home() {
 
   useEffect(() => {
     if (isLoggedIn === true) {
-      // 用户已登录，重定向到 /dashboard
       router.replace('/dashboard');
     }
-    // 如果未登录，不做任何操作
   }, [isLoggedIn, router]);
 
   if (isLoggedIn === undefined) {
-    // 登录状态尚未确定，避免页面闪烁，返回 null 或加载指示器
-    return null; // 或者 <div>加载中...</div>
-  }
-
-  if (isLoggedIn === true) {
-    // 已登录且已重定向，避免渲染主页内容
     return null;
   }
 
-  // 用户未登录，渲染主页内容
+  if (isLoggedIn === true) {
+    return null;
+  }
+
   return (
     <div className="flex flex-col w-full items-center justify-items-center 
-    min-h-screen gap-16 font-[family-name:var(--font-geist-sans)] mt-12">
-      TimeFi
-      start and start again
+    min-h-screen font-[family-name:var(--font-geist-sans)] mt-8">
+      <img src="/favicon.png" alt="logo" className="w-24 h-20 mb-3" />
+      <p className='font-bold text-3xl text-center mb-1'>trust-driven transaction platform</p>
+      <p className='mb-16 font-extralight text-xl text-gray-500'>free products for buyers</p>
       <main className="flex flex-col gap-8 row-start-2 items-center sm:items-center w-full">
         <Dynamic />
       </main>

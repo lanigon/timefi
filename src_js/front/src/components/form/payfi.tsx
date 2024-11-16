@@ -54,8 +54,8 @@ export default function PaymentForm() {
     defaultValues: {
       walletAddress: "",
       amount: 0,
-      days: undefined, // 仅在 PayFi 模式下使用
-      token: "",
+      days: 0, // 仅在 PayFi 模式下使用
+      token: "USDC",
     },
   });
 
@@ -71,32 +71,40 @@ export default function PaymentForm() {
     }
 
     try {
-      console.log(values)
-      await writeContractAsync({
-        address: payfiaddress,
-        abi: abi,
-        functionName: "lendToMerchant",
-        args: [values.walletAddress, values.amount, values.days],
-      })
-      alert("success");
-      form.reset();
+      if(activeTab === "payfi"){
+        await writeContractAsync({
+          address: payfiaddress,
+          abi: abi,
+          functionName: "lendToMerchant",
+          args: [values.walletAddress as `0x${string}`, BigInt(values.amount), BigInt(values.days!)],
+        })
+      }
+      else{
+        await writeContractAsync({
+          address: payfiaddress,
+          abi,
+          functionName: "transfer",
+          args:[values.walletAddress as `0x${string}`, BigInt(values.amount)]
+        })
+      }
+      alert("success")
     } catch (error) {
-      console.error("提交失败", error);
-      alert("提交失败，请稍后重试");
+      console.error("submit error", error);
+      alert("submit error");
     }
   }
 
   return (
     <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow">
       {/* Tabs for PayFi and Transfer modes */}
-      <Tabs defaultValue="payfi" onValueChange={(value) => setActiveTab(value)}>
+      <Tabs defaultValue="payfi" onValueChange={(value) => setActiveTab(value as "payfi" | "transfer")}>
         <TabsList className="flex justify-center mb-4">
           <TabsTrigger value="payfi">PayFi</TabsTrigger>
           <TabsTrigger value="transfer">Transfer</TabsTrigger>
         </TabsList>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="">
             {/* Wallet Address field */}
             <FormField
               control={form.control}
@@ -121,7 +129,7 @@ export default function PaymentForm() {
                     <FormControl>
                       <Select onValueChange={field.onChange}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Choose Token" />
+                          <SelectValue placeholder="USDC" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="USDC">USDC</SelectItem>
@@ -179,7 +187,7 @@ export default function PaymentForm() {
                     <FormControl>
                       <Select onValueChange={field.onChange}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Choose Token" />
+                          <SelectValue placeholder="USDC" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="USDC">USDC</SelectItem>
@@ -209,7 +217,7 @@ export default function PaymentForm() {
               />
             </TabsContent>
 
-            <Button type="submit" disabled={form.formState.isSubmitting}>
+            <Button type="submit" disabled={form.formState.isSubmitting} className="mt-6">
               {form.formState.isSubmitting ? "processing..." : "process"}
             </Button>
           </form>

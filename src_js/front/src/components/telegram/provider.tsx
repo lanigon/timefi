@@ -96,7 +96,7 @@ export const TelegramProvider = ({
   return (
     <DynamicContextProvider
       settings={{
-        environmentId: process.env.NEXT_PUBLIC_ENV_ID,
+        environmentId: process.env.NEXT_PUBLIC_ENV_ID||"",
         walletConnectors: [EthereumWalletConnectors],
       }}
     >

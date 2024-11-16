@@ -14,16 +14,21 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useAccount, useWriteContract } from "wagmi";
+import { payfiaddress, abi } from "@/contracts/payfi";
 
 // 表单验证模式
 const formSchema = z.object({
-  name: z.string().nonempty("姓名不能为空"),
-  email: z.string().email("请输入有效的邮箱地址"),
-  address: z.string().nonempty("地址不能为空"),
-  id_number: z.string().nonempty("身份证号码不能为空"),
+  name: z.string().nonempty("nonempty"),
+  email: z.string().email("nonempty"),
+  address: z.string().nonempty("nonempty"),
+  id_number: z.string().nonempty("nonempty"),
+  approve: z.number()
 });
 
 export default function MerchantForm() {
+  const { address } = useAccount();
+  const {writeContract, writeContractAsync} = useWriteContract()
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -31,6 +36,7 @@ export default function MerchantForm() {
       email: "",
       address: "",
       id_number: "",
+      approve: 0
     },
   });
 
@@ -42,17 +48,28 @@ export default function MerchantForm() {
       const errorMessages = Object.values(errors)
         .map((error) => error?.message)
         .join("\n");
-      alert(`表单验证失败:\n${errorMessages}`);
+      alert(`error:\n${errorMessages}`);
       return;
     }
 
     try {
-      const response = await axios.post("/api/merchants", values);
-      alert("提交成功");
+      const response = await axios.post("/api/merchants", { name: values.name,
+        email: values.email,
+        address: values.address,
+        id_number: values.id_number});
+      if(values.approve != 0){
+        await writeContractAsync({
+          address: payfiaddress,
+          abi,
+          functionName: "initializeMerchantApproval",
+          args: [BigInt(Number(values.approve))]
+        })
+      }
+      alert("success");
       form.reset();
     } catch (error) {
       console.error("提交失败", error);
-      alert("提交失败，请稍后重试");
+      alert("error");
     }
   }
 
@@ -101,6 +118,18 @@ export default function MerchantForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>ID Number</FormLabel>
+              <FormControl>
+                <Input placeholder="ID number" {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="approve"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Approve</FormLabel>
               <FormControl>
                 <Input placeholder="ID number" {...field} />
               </FormControl>
