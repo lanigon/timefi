@@ -2,7 +2,9 @@
 
 This is the source code of our contract deploying on Sepolia TestNet. 
 
-
+### Contract address
+Mintcontract:0xAF7785F8dDFC9629949eDdb07Ba14d53Fc853C14
+Repaycontract:0xA1a038f466Cc2e2CE14AE3A81ed1c814a039Cdf5
 
 #### What is TimeFi.
 
@@ -26,7 +28,7 @@ Sorry for the name, I wanted to add a proxy at the beginning, so I create anothe
 
 **The main functions of the contract:**
 
-- Allow users to buy products from merchant by paying the bill in PayFi way (or TimeFi way).
+- Allow users to buy products from merchant by paying the bill in  TimeFi way.
 - Allow merchant to proactively repay loans.
 - Allow contract to repay the loans automatically if the merchant doesn't repay on time.
 
