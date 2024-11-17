@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Dynamic from "../login/dynemic";
 import { DynamicWidget } from "@dynamic-labs/sdk-react-core";
 
 export default function Navbar() {

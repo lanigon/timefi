@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useIsLoggedIn } from "@dynamic-labs/sdk-react-core"
 
 import Dynamic from '@/components/login/dynemic';
-
 export default function Home() {
   const router = useRouter();
   const isLoggedIn = useIsLoggedIn();
