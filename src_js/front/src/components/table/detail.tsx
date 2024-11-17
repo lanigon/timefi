@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useIsMerchant } from '../auth/merchant';
-import { Payment } from './table'; // 确保导入路径正确
+import { Payment } from './table'; 
 import { Input } from '../ui/input';
 import { Progress } from '@/components/ui/progress';
 import { useAccount, useChainId, useWriteContract } from 'wagmi';
@@ -94,7 +94,7 @@ export default function DetailDialog({
               <strong className='mb-2'>Amount to Pay:</strong>
               <Input
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => setAmount(Number(e.target.value))}
                 placeholder="Enter amount to repay"
               />
               <Button onClick={handlePay} className="mt-4">

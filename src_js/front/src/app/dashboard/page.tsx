@@ -23,7 +23,7 @@ import {withAuth} from "@/components/auth/auth";
 
 function Dashboard() {
   return (
-    <div className="flex justify-center mt-4 bg-white rounded-3xl">
+    <div className="flex justify-center mt-4 rounded-3xl">
       <div className="bg-gray-100 rounded-3xl shadow-lg w-full max-w-xl min-w-[320px] p-6 overflow-hidden">
         <BottomTabs />
       </div>

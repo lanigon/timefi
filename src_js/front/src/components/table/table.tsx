@@ -20,6 +20,7 @@ import DetailDialog from './detail';
 import axios from 'axios';
 import { useAccount } from 'wagmi';
 import { useIsMerchant } from '../auth/merchant';
+import { flexRender } from '@tanstack/react-table';
 
 export type Payment = {
   loanId: number;
@@ -188,7 +189,7 @@ export default function DataTable() {
           >
             {row.getVisibleCells().map((cell) => (
               <TableCell key={cell.id}>
-                {cell.renderValue() as React.ReactNode}
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
               </TableCell>
             ))}
           </TableRow>

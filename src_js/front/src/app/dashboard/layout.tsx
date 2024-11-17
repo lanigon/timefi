@@ -8,7 +8,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="flex flex-col pb-4 w-full justify-start">        
+    <div className="flex flex-col pb-4 w-full justify-start bg-[#F0F6FC]">        
       <Navbar />
       <div className="mt-16">
         {children}
