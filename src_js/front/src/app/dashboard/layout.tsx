@@ -14,7 +14,7 @@ export default function RootLayout({
         {children}
       </div>
       <div className="text-center w-full flex items-center h-full">
-        <p className="text-[#9CA3AF] font-bold text-center ml-6">
+        <p className="text-[#9CA3AF] font-bold text-center w-full">
           Support Your Favorite Cafe to Get Free Coffee
         </p>
       </div>

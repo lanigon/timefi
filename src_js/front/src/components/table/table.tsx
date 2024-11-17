@@ -6,6 +6,7 @@ import {
   useReactTable,
   ColumnDef,
   getCoreRowModel,
+  flexRender,
 } from '@tanstack/react-table';
 import {
   Table,
@@ -20,7 +21,6 @@ import DetailDialog from './detail';
 import axios from 'axios';
 import { useAccount } from 'wagmi';
 import { useIsMerchant } from '../auth/merchant';
-import { flexRender } from '@tanstack/react-table';
 
 export type Payment = {
   loanId: number;
@@ -50,6 +50,7 @@ export default function DataTable() {
 
   const [isLoading, setIsLoading] = useState(false);
 
+  // 将初始值改为 'user'
   const [activeTab, setActiveTab] = useState<'merchant' | 'user'>('user');
 
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
@@ -119,11 +120,9 @@ export default function DataTable() {
     try {
       const { merchantData: newMerchantData, userData: newUserData } = await fetchData();
 
-      if (activeTab === 'merchant') {
-        setMerchantData(newMerchantData);
-      } else {
-        setUserData(newUserData);
-      }
+      // 更新两个数据集
+      setMerchantData(newMerchantData);
+      setUserData(newUserData);
     } catch (error) {
       console.error('加载数据失败', error);
     } finally {
@@ -133,7 +132,7 @@ export default function DataTable() {
 
   useEffect(() => {
     loadData();
-  }, [activeTab]);
+  }, []);
 
   const dataToRender = activeTab === 'merchant' ? merchantData : userData;
 
@@ -201,7 +200,7 @@ export default function DataTable() {
   return (
     <div className="p-4">
       <Tabs
-        defaultValue="merchant"
+        defaultValue="user" // 将默认值改为 'user'
         onValueChange={(value) => setActiveTab(value as 'merchant' | 'user')}
       >
         <TabsList className="flex mb-4">
