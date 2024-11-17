@@ -14,8 +14,8 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useAccount, useWriteContract } from "wagmi";
-import { payfiaddress, abi } from "@/contracts/payfi";
+import { useAccount, useChainId, useWriteContract } from "wagmi";
+import { payfiaddress, abi, layeradd } from "@/contracts/payfi";
 
 const formSchema = z.object({
   name: z.string().nonempty("nonempty"),
@@ -28,6 +28,7 @@ const formSchema = z.object({
 export default function MerchantForm() {
   const { address } = useAccount();
   const {writeContract, writeContractAsync} = useWriteContract()
+  const chainid = useChainId()
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -57,10 +58,10 @@ export default function MerchantForm() {
 
       if(Number(values.approve) != 0){
         await writeContractAsync({
-          address: payfiaddress,
+          address: chainid == 11155111? payfiaddress: layeradd,
           abi,
           functionName: "initializeMerchantApproval",
-          args: [BigInt(Number(values.approve))]
+          args: [BigInt(Number(values.approve)*10**6)]
         })
       }
       alert("success");

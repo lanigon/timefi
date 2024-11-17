@@ -1,7 +1,7 @@
 // components/DetailDialog.tsx
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,27 +9,52 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogTrigger,
   DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useIsMerchant } from '../auth/merchant';
-import { Payment } from './table'
+import { Payment } from './table'; // 确保导入路径正确
 import { Input } from '../ui/input';
+import { Progress } from '@/components/ui/progress';
+import { useAccount, useChainId, useWriteContract } from 'wagmi';
+import { payfiaddress, abi, layeradd } from '@/contracts/payfi';
+
 
 type DetailDialogProps = {
-  payment: Payment; // 根据实际数据类型定义
+  payment: Payment;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   role: 'merchant' | 'user';
 };
 
-export default function DetailDialog({ payment, open, onOpenChange, role }: DetailDialogProps):React.ReactNode {
+export default function DetailDialog({
+  payment,
+  open,
+  onOpenChange,
+  role,
+}: DetailDialogProps): JSX.Element {
+  const { address } = useAccount()
+  const [isLoading, setisLoading] = useState(false)
   const isMerchant = useIsMerchant();
-  const [amount, setAmount] = React.useState('');
-  const refund = ()=>{
+  const [amount, setAmount] = useState(0)
+  const progressPercentage = (payment.repaidAmount / payment.amount) * 100;
+  const {writeContract, writeContractAsync} = useWriteContract()
+  const chainid = useChainId()
+  const handlePay = async() => {
+    if(payment.status !== 'processing') {
+      alert("Loan is not processing")
+      return
+    }
+    setisLoading(true)
+    writeContractAsync({
+      address: chainid == 11155111? payfiaddress: layeradd,
+      abi,
+      functionName: 'repayLoan',
+      args: [address, payment.loanId, BigInt(amount*10**6)],
+    })
+    setisLoading(false)
+  };
 
-  }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -39,38 +64,48 @@ export default function DetailDialog({ payment, open, onOpenChange, role }: Deta
         </DialogHeader>
         <div className="space-y-2">
           <div>
-            <strong>ID:</strong> {payment.id}
+            <strong>ID:</strong> {payment.loanId}
           </div>
           <div>
             <strong>Status:</strong> {payment.status}
           </div>
           <div>
-            <strong>Consumer:</strong> {payment.from}
+            <strong>Buyer:</strong> {payment.buyer}
           </div>
           <div>
-            <strong>Merchant:</strong> {payment.to}
+            <strong>Merchant:</strong> {payment.merchant}
           </div>
           <div>
             <strong>Time Left:</strong> {payment.time}
           </div>
           <div>
-            <strong>Total Amount:</strong> {payment.totalAmount}
+            <strong>Total Amount:</strong> {payment.amount/10**6}
           </div>
           <div>
-            <strong>Repaid Amount:</strong> {payment.currentAmount}
+            <strong>Repaid Amount:</strong> {payment.repaidAmount/10**6}
           </div>
-          {role=="merchant" &&
           <div>
-            <strong>amount:</strong> 
-            <Input value={amount} // 绑定状态值
-              onChange={(e) => setAmount(e.target.value)}>
-            </Input>
-            <Button onClick={()=>eval(amount)} className='mt-4'>pay</Button>
-          </div> }
+            <strong>Repayment Progress:</strong>
+            <Progress value={progressPercentage} className="mt-2" />
+            <span className="text-sm text-gray-600">{progressPercentage.toFixed(2)}%</span>
+          </div>
+          {role === 'merchant' && (
+            <div>
+              <strong className='mb-2'>Amount to Pay:</strong>
+              <Input
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Enter amount to repay"
+              />
+              <Button onClick={handlePay} className="mt-4">
+                {isLoading ? 'Paying...' : 'Pay'}
+              </Button>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">关闭</Button>
+            <Button variant="outline">Close</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>

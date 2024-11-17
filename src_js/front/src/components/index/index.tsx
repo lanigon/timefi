@@ -41,9 +41,9 @@ export default function Index() {
   })
   useEffect(() => {
     if (data) {
-      setAmount(Number(data[0].result))
-      setMax(Number(data[1].result))
-      setCur(Number(data[2].result))
+      setAmount(Number(data[0].result)/10**6)
+      setMax(Number(data[1].result)/10**6)
+      setCur(Number(data[2].result)/10**6)
     }
   }, [data]);
 
@@ -51,8 +51,8 @@ export default function Index() {
     <div className="flex flex-col items-center py-6 space-y-12">
       <div className="w-full max-w-md bg-blue-100 rounded-lg shadow-md p-6">
         <div className="flex flex-col items-center">
-          <span className="text-5xl font-extrabold text-gray-800">{amount}</span>
-          <span className="text-xl text-gray-600">USDC</span>
+          <span className="text-5xl font-extrabold text-gray-800">{parseFloat(amount.toFixed(2))}</span>
+          <span className="text-xl text-gray-600">TimeUSD</span>
         </div>
       </div>
 
@@ -71,25 +71,21 @@ export default function Index() {
 
           <div className="p-6">
             <TabsContent value="user" className="flex flex-col space-y-4">
-              <div>info</div>
-              <div className="text-gray-700">Total Give: 552</div>
-              <div className="text-gray-700">Total Back: 55</div>
-              <div>statistics</div>
+              <div className="text-gray-500 text-3xl font-bold">Total Give: 552 TimeUSD</div>
+              <div className="text-gray-500 text-3xl font-bold">Total Back: 55 TimeUSD</div>
             </TabsContent>
             <TabsContent value="merchant" className="flex flex-col space-y-4">
-              <div>info</div>
               <div className="text-gray-700 ">
-                <span className="font-bold">Total limit:</span> 
+                <span className="text-gray-500 text-3xl font-bold">Total limit:   </span> 
                 <span className="text-gray-500 text-3xl font-bold">
-                  {max !== undefined ? max.toString() : "Loading..."}</span>
+                  {max !== undefined ? max.toString() : "Loading..."} TimeUSD</span>
                 </div>
               <div className="text-gray-700">
-                <span>Current loan:</span><span className="text-gray-200">
-                  {cur !== undefined ? cur.toString() : "Loading..."}
+                <span className="text-gray-500 text-3xl font-bold">Current loan:   </span>
+                 <span className="text-gray-500 text-3xl font-bold">
+                  {cur !== undefined ? cur.toString() : "Loading..."} TimeUSD
                 </span>
               </div>
-              <div>statistics</div>
-              <div className="text-gray-700">num: 5</div>
             </TabsContent>
           </div>
         </Tabs>

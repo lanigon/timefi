@@ -13,5 +13,5 @@ export function useIsMerchant() {
     ]
   })
 
-  return data!>0?true:false;
+  return Number(data!)>0?true:false;
 }

@@ -26,8 +26,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import{payfiaddress, abi, merchant} from "@/contracts/payfi";
-import { useReadContract, useWriteContract } from "wagmi";
+import{payfiaddress, abi, merchant, layeradd} from "@/contracts/payfi";
+import { useChainId, useReadContract, useWriteContract } from "wagmi";
 import axios from "axios";
 
 const formSchema = z.object({
@@ -50,6 +50,7 @@ export default function PaymentForm() {
   const {writeContract, writeContractAsync} = useWriteContract()
   const [message, setMessage] = useState("");
   const [loading, setloading] = useState(false);
+  const chainid = useChainId()
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -57,7 +58,7 @@ export default function PaymentForm() {
       walletAddress: "",
       amount: 0,
       days: 0, 
-      token: "USDC",
+      token: "TimeUSD",
     },
   });
 
@@ -75,21 +76,20 @@ export default function PaymentForm() {
     try {
       if(activeTab === "payfi"){
         await writeContractAsync({
-          address: payfiaddress,
+          address: chainid == 11155111? payfiaddress: layeradd,
           abi: abi,
           functionName: "lendToMerchant",
-          args: [values.walletAddress as `0x${string}`, BigInt(values.amount), BigInt(values.days!)],
+          args: [values.walletAddress as `0x${string}`, BigInt(values.amount*10**6), BigInt(values.days!)],
         })
       }
       else{
         await writeContractAsync({
-          address: payfiaddress,
+          address: chainid == 11155111? payfiaddress: layeradd,
           abi,
           functionName: "transfer",
-          args:[values.walletAddress as `0x${string}`, BigInt(values.amount)]
+          args:[values.walletAddress as `0x${string}`, BigInt(values.amount*10**6)]
         })
       }
-      alert("success")
     } catch (error) {
       console.error("submit error", error);
       alert(error);
@@ -104,7 +104,7 @@ export default function PaymentForm() {
       use_sepolia: true
     })
     setloading(false)
-    console.log(response.data)
+    alert(response.data.final_summary)
   }
   return (
     <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow">
@@ -129,18 +129,15 @@ export default function PaymentForm() {
                   className="flex-grow"
                   {...field}
                 />
-                <Button
+                {(activeTab === "payfi")&&<Button
                   type="button"
                   onClick={handleClick}
                   className="ml-2"
                 >
                   {loading?"loading...": "evaluate"}
-                </Button>
+                </Button>}
               </div>
             </FormControl>
-            {message && (
-              <div className="text-gray-700 mt-2">{message}</div>
-            )}
           </FormItem>          
         )}
       />
@@ -155,10 +152,10 @@ export default function PaymentForm() {
                     <FormControl>
                       <Select onValueChange={field.onChange}>
                         <SelectTrigger>
-                          <SelectValue placeholder="USDC" />
+                          <SelectValue placeholder="TimeUSD" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="USDC">USDC</SelectItem>
+                          <SelectItem value="TimeUSD">TimeUSD</SelectItem>
                         </SelectContent>
                       </Select>
                     </FormControl>
@@ -175,7 +172,7 @@ export default function PaymentForm() {
                     <FormControl>
                       <Input
                         type="number"
-                        placeholder="total USDC amount"
+                        placeholder="total TimeUSD amount"
                         {...field}
                         onChange={(e) => field.onChange(Number(e.target.value))}
                       />
@@ -213,10 +210,10 @@ export default function PaymentForm() {
                     <FormControl>
                       <Select onValueChange={field.onChange}>
                         <SelectTrigger>
-                          <SelectValue placeholder="USDC" />
+                          <SelectValue placeholder="TimeUSD" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="USDC">USDC</SelectItem>
+                          <SelectItem value="TimeUSD">TimeUSD</SelectItem>
                         </SelectContent>
                       </Select>
                     </FormControl>

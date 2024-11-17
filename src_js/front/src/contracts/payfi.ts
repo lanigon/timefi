@@ -837,3 +837,5 @@ export const abi = [
   ]
 
 export const merchant = "0x2425A2d476840501f1863840fAAC5778E6Cb1e17";
+
+export const layeradd = "0xB626C2801Dc36801eCC7D0E876451943FF0D36de"

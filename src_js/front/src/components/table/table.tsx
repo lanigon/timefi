@@ -1,6 +1,7 @@
+// components/Index.tsx
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   useReactTable,
   ColumnDef,
@@ -21,15 +22,22 @@ import { useAccount } from 'wagmi';
 import { useIsMerchant } from '../auth/merchant';
 
 export type Payment = {
-  id: number;
-  status: 'processing' | 'success' | 'failed';
-  to: string;
-  consumerAdd: string;
+  loanId: number;
+  amount: number;
+  repaidAmount: number;
+  isRepaid: boolean;
+  dueDate: number; // Unix 时间戳（秒）
+  buyer: string;
+  merchant: string;
+  type: string;
+  status: string;
   time: string; // 剩余时间
-  totalAmount: number;
-  currentAmount: number;
-  from: string;
-  type: 'merchant' | 'user'; // 添加类型字段
+};
+
+// 工具函数，用于简化地址显示
+const shortenAddress = (address: string): string => {
+  if (!address) return '';
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
 };
 
 export default function DataTable() {
@@ -39,15 +47,9 @@ export default function DataTable() {
   const [merchantData, setMerchantData] = useState<Payment[]>([]);
   const [userData, setUserData] = useState<Payment[]>([]);
 
-  const [merchantPage, setMerchantPage] = useState(1);
-  const [userPage, setUserPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasMoreMerchant, setHasMoreMerchant] = useState(true);
-  const [hasMoreUser, setHasMoreUser] = useState(true);
 
   const [activeTab, setActiveTab] = useState<'merchant' | 'user'>('merchant');
-  const observer = useRef<IntersectionObserver | null>(null);
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -57,22 +59,50 @@ export default function DataTable() {
     setIsDetailOpen(true);
   };
 
-  const fetchData = async (
-    page: number,
-    pageSize: number
-  ): Promise<{ merchantData: Payment[]; userData: Payment[] }> => {
+  const calculateRemainingTime = (dueDate: number): string => {
+    const currentTime = Date.now() / 1000;
+    const remainingSeconds = dueDate - currentTime;
+    if (remainingSeconds <= 0) {
+      return 'Expired';
+    }
+    const days = Math.floor(remainingSeconds / (3600 * 24));
+    const hours = Math.floor((remainingSeconds % (3600 * 24)) / 3600);
+    return `${days}d ${hours}h`;
+  };
+
+  const fetchData = async (): Promise<{ merchantData: Payment[]; userData: Payment[] }> => {
     try {
-      const response = await axios.get(
-        `/api/transactions?target=${address}`
-      );
-      console.log(response.data)
+      const response = await axios.get(`/api/transactions?target=${address}`);
       const combinedData: Payment[] = response.data;
 
-      const merchantData: Payment[] = combinedData.filter(
-        (item) => item.from == address
+      const processedData = combinedData.map((item) => {
+        const currentTime = Date.now() / 1000; // 当前时间（秒）
+        let status: 'processing' | 'success' | 'failed';
+
+        if (item.isRepaid) {
+          status = 'success';
+        } else if (currentTime > item.dueDate) {
+          status = 'failed';
+        } else {
+          status = 'processing';
+        }
+
+        return {
+          ...item,
+          type:
+            item.merchant.toLowerCase() === address?.toLowerCase()
+              ? 'merchant'
+              : 'user',
+          status: status,
+          time: calculateRemainingTime(item.dueDate),
+        };
+      });
+
+      const merchantData: Payment[] = processedData.filter(
+        (item) => item.type === 'merchant'
       );
-      const userData: Payment[] = combinedData.filter(
-        (item) => item.from != address
+      const userData: Payment[] = processedData.filter(
+        (item) => item.type === 'user'
       );
 
       return { merchantData, userData };
@@ -83,29 +113,15 @@ export default function DataTable() {
   };
 
   const loadData = async () => {
-    if (isLoading) return;
-
     setIsLoading(true);
 
     try {
-      const pageSize = 15;
-      const page = activeTab === 'merchant' ? merchantPage : userPage;
-
-      const { merchantData: newMerchantData, userData: newUserData } =
-        await fetchData(page, pageSize);
+      const { merchantData: newMerchantData, userData: newUserData } = await fetchData();
 
       if (activeTab === 'merchant') {
-        if (newMerchantData.length < pageSize) {
-          setHasMoreMerchant(false);
-        }
-        setMerchantData((prevData) => [...prevData, ...newMerchantData]);
-        setMerchantPage((prevPage) => prevPage + 1);
+        setMerchantData(newMerchantData);
       } else {
-        if (newUserData.length < pageSize) {
-          setHasMoreUser(false);
-        }
-        setUserData((prevData) => [...prevData, ...newUserData]);
-        setUserPage((prevPage) => prevPage + 1);
+        setUserData(newUserData);
       }
     } catch (error) {
       console.error('加载数据失败', error);
@@ -115,57 +131,34 @@ export default function DataTable() {
   };
 
   useEffect(() => {
-    if (activeTab === 'merchant') {
-      if (merchantData.length === 0) {
-        setMerchantPage(1);
-        setHasMoreMerchant(true);
-        loadData();
-      }
-    } else {
-      if (userData.length === 0) {
-        setUserPage(1);
-        setHasMoreUser(true);
-        loadData();
-      }
-    }
+    loadData();
   }, [activeTab]);
-
-  useEffect(() => {
-    if (observer.current) observer.current.disconnect();
-
-    observer.current = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          if (
-            (activeTab === 'merchant' && hasMoreMerchant) ||
-            (activeTab === 'user' && hasMoreUser)
-          ) {
-            loadData();
-          }
-        }
-      },
-      {
-        root: null,
-        rootMargin: '0px',
-        threshold: 1.0,
-      }
-    );
-
-    if (loadMoreRef.current) {
-      observer.current.observe(loadMoreRef.current);
-    }
-
-    return () => {
-      if (observer.current) observer.current.disconnect();
-    };
-  }, [activeTab, hasMoreMerchant, hasMoreUser, isLoading]);
 
   const dataToRender = activeTab === 'merchant' ? merchantData : userData;
 
-  const columns: ColumnDef<Payment>[] = [
-    { accessorKey: 'to', header: 'To' },
-    { accessorKey: 'status', header: 'Status' },
-  ];
+  const columns: ColumnDef<Payment>[] = React.useMemo(() => {
+    if (activeTab === 'merchant') {
+      return [
+        { accessorKey: 'loanId', header: 'ID' },
+        {
+          accessorKey: 'buyer',
+          header: 'User',
+          cell: ({ getValue }) => shortenAddress(getValue() as string),
+        },
+        { accessorKey: 'status', header: 'Status' },
+      ];
+    } else {
+      return [
+        { accessorKey: 'loanId', header: 'ID' },
+        {
+          accessorKey: 'merchant',
+          header: 'Merchant',
+          cell: ({ getValue }) => shortenAddress(getValue() as string),
+        },
+        { accessorKey: 'status', header: 'Status' },
+      ];
+    }
+  }, [activeTab]);
 
   const table = useReactTable({
     data: dataToRender,
@@ -174,7 +167,7 @@ export default function DataTable() {
   });
 
   const renderTable = () => (
-    <Table className='bg-white'>
+    <Table className="bg-white">
       <TableHeader>
         <TableRow>
           {table.getFlatHeaders().map((header) => (
@@ -226,13 +219,6 @@ export default function DataTable() {
           {renderTable()}
 
           {isLoading && <div className="text-center p-4">loading...</div>}
-
-          {((activeTab === 'merchant' && !hasMoreMerchant) ||
-            (activeTab === 'user' && !hasMoreUser)) && (
-            <div className="text-center p-4">no more</div>
-          )}
-
-          <div ref={loadMoreRef}></div>
 
           {selectedPayment && (
             <DetailDialog
