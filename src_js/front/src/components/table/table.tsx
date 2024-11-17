@@ -19,8 +19,9 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import DetailDialog from './detail';
 import axios from 'axios';
-import { useAccount } from 'wagmi';
+import { useAccount, useChainId, useReadContract } from 'wagmi';
 import { useIsMerchant } from '../auth/merchant';
+import { layeradd, abi } from '@/contracts/payfi';
 
 export type Payment = {
   loanId: number;
@@ -43,6 +44,7 @@ const shortenAddress = (address: string): string => {
 export default function DataTable() {
   const { address } = useAccount();
   const isMerchant = useIsMerchant();
+  const chainId = useChainId();
 
   const [merchantData, setMerchantData] = useState<Payment[]>([]);
   const [userData, setUserData] = useState<Payment[]>([]);
@@ -69,11 +71,25 @@ export default function DataTable() {
     const hours = Math.floor((remainingSeconds % (3600 * 24)) / 3600);
     return `${days}d ${hours}h`;
   };
-
+  const { data, isError } = useReadContract({
+    address: layeradd,
+    abi,
+    functionName: 'getTransactions', 
+    args: [address]
+  });
+  console.log(data)
   const fetchData = async (): Promise<{ merchantData: Payment[]; userData: Payment[] }> => {
     try {
-      const response = await axios.get(`/api/transactions?target=${address}`);
-      const combinedData: Payment[] = response.data;
+      let response;
+      if (chainId === 545) { 
+        
+      } else if (chainId === 80002) { 
+        response = await axios.get(`/api/transactionsPoly?target=${address}`);
+        console.log(response)
+      } else{
+        response = await axios.get(`/api/transactions?target=${address}`);
+      }
+      const combinedData: Payment[] = response!.data;
 
       const processedData = combinedData.map((item) => {
         const currentTime = Date.now() / 1000; // 当前时间（秒）
@@ -107,7 +123,7 @@ export default function DataTable() {
 
       return { merchantData, userData };
     } catch (error) {
-      console.error('加载数据失败', error);
+      console.error('error', error);
       return { merchantData: [], userData: [] };
     }
   };
@@ -118,11 +134,10 @@ export default function DataTable() {
     try {
       const { merchantData: newMerchantData, userData: newUserData } = await fetchData();
 
-      // 更新两个数据集
       setMerchantData(newMerchantData);
       setUserData(newUserData);
     } catch (error) {
-      console.error('加载数据失败', error);
+      console.error('error', error);
     } finally {
       setIsLoading(false);
     }
