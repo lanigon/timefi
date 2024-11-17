@@ -50,7 +50,7 @@ export default function DataTable() {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'merchant' | 'user'>('merchant');
+  const [activeTab, setActiveTab] = useState<'merchant' | 'user'>('user');
 
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);

@@ -104,7 +104,7 @@ export default function PaymentForm() {
       use_sepolia: true
     })
     setloading(false)
-    alert(response.data.final_summary)
+    alert(response.data.final_summary+"\n\n"+response.data.credit_agent_response+"\n\n"+response.data.risk_agent_response)
   }
   return (
     <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow">

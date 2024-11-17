@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useAccount, useReadContracts } from "wagmi";
-import { abi, payfiaddress, merchant } from "@/contracts/payfi";
+import { useAccount, useChainId, useReadContracts } from "wagmi";
+import { abi, payfiaddress, merchant, layeradd } from "@/contracts/payfi";
 import { useIsMerchant } from "../auth/merchant";
 
 export default function Index() {
+  const chainid = useChainId()
   const [amount, setAmount] = useState(0);
   const [max, setMax] = useState(0);
   const [cur, setCur] = useState(0);
@@ -14,7 +15,7 @@ export default function Index() {
   const isMerchant = useIsMerchant();
   const {data} = useReadContracts({
     contracts: [{
-      address: payfiaddress,
+      address: chainid == 11155111? payfiaddress: layeradd,
       abi: abi,
       functionName: 'balanceOf',
       args: [
@@ -22,7 +23,7 @@ export default function Index() {
       ]
       },
       {
-        address: payfiaddress,
+        address: chainid == 11155111? payfiaddress: layeradd,
         abi: abi,
         functionName: 'merchantMaxLoanLimits',
         args: [
@@ -30,7 +31,7 @@ export default function Index() {
         ]
       },
       {
-        address: payfiaddress,
+        address: chainid == 11155111? payfiaddress: layeradd,
         abi: abi,
         functionName: 'merchantCurrentLoans',
         args: [
@@ -51,7 +52,7 @@ export default function Index() {
     <div className="flex flex-col items-center py-6 space-y-12">
       <div className="w-full max-w-md bg-blue-100 rounded-lg shadow-md p-6">
         <div className="flex flex-col items-center">
-          <span className="text-5xl font-extrabold text-gray-800">${parseFloat(amount.toFixed(2))}</span>
+          <span className="text-5xl font-extrabold text-gray-800">${parseFloat(amount.toFixed(2))? parseFloat(amount.toFixed(2)) : 0}</span>
           <span className="text-xl text-gray-600">TimeUSD</span>
         </div>
       </div>
