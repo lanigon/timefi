@@ -27,15 +27,14 @@ export type Payment = {
   amount: number;
   repaidAmount: number;
   isRepaid: boolean;
-  dueDate: number; // Unix 时间戳（秒）
+  dueDate: number;
   buyer: string;
   merchant: string;
   type: string;
   status: string;
-  time: string; // 剩余时间
+  time: string; 
 };
 
-// 工具函数，用于简化地址显示
 const shortenAddress = (address: string): string => {
   if (!address) return '';
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -50,7 +49,6 @@ export default function DataTable() {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  // 将初始值改为 'user'
   const [activeTab, setActiveTab] = useState<'merchant' | 'user'>('user');
 
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
