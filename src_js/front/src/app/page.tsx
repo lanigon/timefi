@@ -25,7 +25,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col w-full items-center justify-items-center 
-    min-h-screen font-[family-name:var(--font-geist-sans)] pt-8">
+    min-h-screen font-[family-name:var(--font-geist-sans)] pt-8 bg-[#F0F6FC]">
       <img src="/favicon.png" alt="logo" className="w-24 h-20 mb-3" />
       <p className='font-bold text-3xl text-center mb-1'>trust-driven transaction platform</p>
       <p className='mb-16 font-extralight text-xl text-gray-500'>free products for buyers</p>
