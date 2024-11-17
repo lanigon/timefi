@@ -2,7 +2,9 @@
 
 This is the source code of our contract deploying on Polygon Pos. 
 
-
+### Contract address
+Mintcontract:0xB626C2801Dc36801eCC7D0E876451943FF0D36de
+Repaycontract:0xbE41F7EC499Be94D484686AbF3c6b844E2003A73
 
 #### What is TimeFi.
 
