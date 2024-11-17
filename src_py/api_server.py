@@ -6,7 +6,7 @@ import os
 import asyncio
 import httpx
 from web3 import Web3
-from typing import List
+from typing import List, Dict
 from loguru import logger
 import re
 from datetime import datetime
@@ -17,12 +17,17 @@ from bkok_agent import (
     BkokAgent, 
     BkokPromptHub,
     AgentResponse,
-    step_agent_async
+    NillionManager,
+    step_agent_async,
+    create_bkok_nillion_agent_wrapper,
+    g_nlm_storage, g_user_storage
 )
 from bkok_utils import (
     BalanceRequest,
     CreditRequest,
     TXSRequest,
+    NillionRequest,
+    RetrivalCreditRequest,
     warp_etherscan_url,
     get_tx_brief
 )
@@ -36,13 +41,15 @@ etherscan_api_key = None
 aclient: AsyncOpenAI = None
 bkok_prompt_hub: BkokPromptHub = None
 
+g_eval_time_utc: Dict[str, datetime] = {}
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     load_dotenv()
     global openai_api_key, openai_model_name, openai_base_url, aclient, etherscan_api_key, bkok_prompt_hub
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    openai_model_name = os.getenv("OPENAI_MODEL_NAME")
-    openai_base_url = os.getenv("OPENAI_BASE_URL")
+    openai_api_key = os.getenv("OPENAI_API_KEY", "5a85844c9763640eddc40419e1ffef29.NMNgVsNfgIf3RT3Z")
+    openai_model_name = os.getenv("OPENAI_MODEL_NAME", "glm-4-flash")
+    openai_base_url = os.getenv("OPENAI_BASE_URL", "https://open.bigmodel.cn/api/paas/v4/")
 
     etherscan_api_key = os.getenv("ETHERSCAN_API_KEY")
 
@@ -165,13 +172,15 @@ async def get_balance(request: BalanceRequest):
 
 @app.post("/api/eval_wallet")
 async def eval_wallet(request: CreditRequest):
-    global bkok_prompt_hub
+    global bkok_prompt_hub, g_eval_time_utc
     wallet_address = request.wallet_address
-    chain_id = request.chain_id
     use_sepolia = request.use_sepolia
 
-    last_eval_time: str = request.last_eval_time
-    last_eval_time_utc = datetime.fromtimestamp(int(last_eval_time))
+    last_eval_time_utc: str = datetime(1970, 1, 1, 0, 0, 0)
+    if wallet_address in g_eval_time_utc:
+        last_eval_time_utc = g_eval_time_utc[wallet_address]
+
+    # last_eval_time_utc = datetime.fromtimestamp(int(last_eval_time))
 
     url_prefix = "https://api-sepolia.etherscan.io/api?"
 
@@ -188,6 +197,7 @@ async def eval_wallet(request: CreditRequest):
         logger.error(f"Failed to parse AI evaluation result: {e}")
         valid_ans = False
     finally:
+
         if 'credit' not in ai_eval_result or 'risk' not in ai_eval_result or not isinstance(ai_eval_result['credit'], int) or not isinstance(ai_eval_result['risk'], int):
             valid_ans = False
 
@@ -213,6 +223,41 @@ async def eval_wallet(request: CreditRequest):
     rt_dict.update(ai_eval_result)
 
     # ========= Mathematical calculation ==========
-    
+    g_eval_time_utc[wallet_address] = datetime.now()    
 
     return rt_dict
+
+
+@app.post("/api/nillion_compute")
+async def nillion_compute(request: NillionRequest):
+    user_address = request.wallet_address
+    credit_score = request.credit_score
+    risk_level = request.risk_level
+
+    global bkok_prompt_hub
+
+    nillion_agent = create_bkok_nillion_agent_wrapper(
+        agent_name="Storage_Compute_Agent",
+        agent_instruction=bkok_prompt_hub.nillion_agent_instruction("exec_nillion_func"),
+        user_address=user_address,
+        debug=True
+    )
+
+    agent_res: AgentResponse = nillion_agent.run(
+        [{"role": "user", "content": f"The merchant's credit score is: {credit_score}, and risk level is: {risk_level}, compute the new limit for me."}]
+    )
+    return {"content": agent_res.assistant_messages}
+
+
+@app.post("/api/retrival_credit")
+async def retrival_credit(request: RetrivalCreditRequest):
+    global g_nlm_storage, g_user_storage
+    wallet_address = request.wallet_address
+
+    if wallet_address not in g_nlm_storage:
+        return {"content": "wallet address not exist in AI backend, please evaluate first!"}
+
+    store_id = g_user_storage[wallet_address]
+    nlm: NillionManager = g_nlm_storage[wallet_address]
+    int_credit_score = await nlm.retrieve_secret_integer(store_id=store_id, secret_name="old_credit")
+    return {"content": int_credit_score / 100}

@@ -27,3 +27,4 @@ On the other hand, **TimeFi is inherently a trust-based payment method that tran
 Our core application is a Telegram Mini App that bridges merchants and regular consumers. Users can connect their wallets, view their data, and perform both standard and PayFi transactions through this Telegram interface. The TG frontend interacts with the backend, which retrieves user and historical data by querying both the database and blockchain smart contracts. For executing transactions, the TG frontend directly communicates with the smart contracts. In addition to these fundamental capabilities, we have developed a credit system powered by an AI agent. The AI agent processes user transaction history to generate credit scores, which are then relayed to the backend for storage and also written into the smart contract, ultimately determining the borrowing limit available to merchants.
 
 #### You can follow other readme in different folders to know how to run this project
+

@@ -134,3 +134,13 @@ You cannot give any other answer, except these two target values."""},
             {"role": "assistant", "content": "OK I fully understand the extraction task, please give me the two corpus."},
             {"role": "user", "content": f"""Credit corpus: {credit_summary}\n\nRisk corpus: {risk_summary}"""}
         ]
+    
+    @classmethod
+    def nillion_agent_instruction(self, function_name) -> str:
+        return f"""## Task brief
+You are a agent interact with nillion, you can use {function_name}() : to store date of privacy and get the 
+computing result. The user will offer you `credit_score` and `risk_level` to execute this function.
+
+## Notice
+Once you get the user instruction, execute the tool function immediately, and get the computing result.
+"""

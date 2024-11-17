@@ -26,16 +26,56 @@ func main() {
 	router.GET("/merchants/:id", func(c *gin.Context) {
 		controllers.GetMerchantByIDHandler(c, merchantService)
 	})
+	router.GET("/merchants/byaddress", func(c *gin.Context) {
+		controllers.GetMerchantByAddressHandler(c, merchantService)
+	})
 	router.GET("/merchants", func(c *gin.Context) {
 		controllers.GetAllMerchantsHandler(c, merchantService)
 	})
-	router.GET("/transactions", func(c *gin.Context) {
+	router.GET("/transactionsUser", func(c *gin.Context) {
 		controllers.GetTransactionHistory(c)
+	})
+	router.GET("/transactionsMerchants", func(c *gin.Context) {
+		controllers.GetTransactionHistoryMerchants(c)
+	})
+	router.GET("/transactions", func(c *gin.Context) {
+		controllers.GetAllLoans(c)
+	})
+	router.GET("/transactionsPoly", func(c *gin.Context) {
+		controllers.GetAllLoansPoly(c)
 	})
 
 	go scheduleCreditUpdate(merchantService)
+	go scheduleBackup()
+	go scheduleRefund()
 
 	router.Run(":8080")
+}
+
+func scheduleRefund() {
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
+
+	for {
+		<-ticker.C
+		err := services.CallRefundContract()
+		if err != nil {
+			fmt.Println("Error :", err)
+		} else {
+			fmt.Println("Successfully updated merchant credits.")
+		}
+	}
+}
+
+func scheduleBackup() {
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		<-ticker.C
+		fmt.Println("**************Begin Back Up***************")
+		controllers.BackupLoans()
+	}
 }
 
 func scheduleCreditUpdate(merchantService services.MerchantService) {
@@ -46,9 +86,9 @@ func scheduleCreditUpdate(merchantService services.MerchantService) {
 		<-ticker.C
 		err := updateAllMerchantsCredit(merchantService)
 		if err != nil {
-			fmt.Println("Error updating merchant credits:", err)
+			fmt.Println("Error callrefund:", err)
 		} else {
-			fmt.Println("Successfully updated merchant credits.")
+			fmt.Println("Successfully called refund.")
 		}
 	}
 }
@@ -70,9 +110,8 @@ func updateAllMerchantsCredit(merchantService services.MerchantService) error {
 		wg.Add(1)
 		go func(m models.Merchants) {
 			defer wg.Done()
-			// updatedMerchant, err := services.GetCredit(m)
-			updatedMerchant := merchant
-			updatedMerchant.Credit = 233
+			updatedMerchant, err := services.GetCredit(m)
+			controllers.SetMerchantMaxLoanLimit(updatedMerchant)
 			if err != nil {
 				errorsCh <- err // Send error to channel
 			} else {
