@@ -13,6 +13,7 @@ This setup allows merchants to utilize the funds temporarily, benefitting from t
 
     @property
     def agent_instruction(self):
+        
         return """## Task brief
 You are a web3 finance agent & expert analyst, you can use Etherscan API to fetch the 
  transactions of an wallet address. You should also evaluate the risk and the credit of the wallet address, based on the

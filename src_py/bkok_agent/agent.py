@@ -297,7 +297,6 @@ async def step_agent_async(url_prefix: str,
     """The helper function to step through the agent."""
     bkok_prompt_hub = BkokPromptHub()
 
-
     # create agent instance
     credit_agent = create_bkok_agent_wrapper(url_prefix, 
                                               "Web3_Credit_Agent", 

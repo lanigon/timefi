@@ -1,4 +1,8 @@
 # ETH global hackthon for Bankok 2024(Best Blind App built with Create-Nillion-App: $2,500 )
+
+![img1](assets/nillion.jpg)
+![img2](assets/team1.jpg)
+![img3](assets/team3.jpg)
 We will create four branches here:
 
 + Main branch: with README file

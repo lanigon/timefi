@@ -85,7 +85,6 @@ export default function DataTable() {
         
       } else if (chainId === 80002) { 
         response = await axios.get(`/api/transactionsPoly?target=${address}`);
-        console.log(response)
       } else{
         response = await axios.get(`/api/transactions?target=${address}`);
       }
