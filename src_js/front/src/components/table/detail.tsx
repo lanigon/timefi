@@ -109,6 +109,6 @@ export default function DetailDialog({
           </DialogClose>
         </DialogFooter>
       </DialogContent>
-    </Dialog>+
+    </Dialog>
   );
 }
