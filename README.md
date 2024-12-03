@@ -1,4 +1,4 @@
-# ETH global hackthon for Bankok 2024(Best Blind App built with Create-Nillion-App: $2,500 )
+# ETH global hackthon for Bankok 2024(Best Blind App built with Create-Nillion-App: $2,500 🏆)
 
 ![img1](assets/nillion.jpg)
 ![img2](assets/team1.jpg)
